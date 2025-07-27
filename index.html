@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Writing Environments // Lab</title>
+    <title>Intention App // Focus Environments</title>
     <style>
         @keyframes float {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -72,19 +72,24 @@
             overflow: hidden;
             white-space: nowrap;
             width: 0;
-            animation: typewriter 2s steps(40) forwards;
+            animation: typewriter 2s steps(40) forwards, hideCursor 0.1s 2.6s forwards;
             animation-delay: 0.5s;
+        }
+        
+        @keyframes hideCursor {
+            to { border-right-color: transparent; }
         }
         
         .description {
             font-size: 1.1rem;
             line-height: 1.6;
             color: #ccc;
-            margin-bottom: 3rem;
+            margin: 0 auto 3rem auto;
             max-width: 600px;
             opacity: 0;
             animation: fadeIn 1s ease-in forwards;
             animation-delay: 2.5s;
+            text-align: center;
         }
         
         @keyframes fadeIn {
@@ -162,18 +167,18 @@
 <body>
     <div class="stars"></div>
     <div class="container">
-        <h1>FOCUS.ENVIRONMENTS</h1>
-        <div class="subtitle">// designed for focus and play</div>
+        <h1>INTENTION.APP</h1>
+        <div class="subtitle">// focus, play, and enjoy your work</div>
         
         <div class="description">
-            What if we had ideal environments for focus?<br>
-            <em>Different spaces. Different mindsets. Zero overload.</em>
+            Launch focused work sessions in beautiful 3D environments.<br>
+            <em>Each app holds its own context. Make work fun.</em>
         </div>
         
         <div class="environments">
             <a href="bedroom.html" class="environment">
                 <span class="env-label">⚡ NEON BEDROOM</span>
-                <span class="env-desc">cyberpunk vibes // late night energy</span>
+                <span class="env-desc">late night creativity // cyberpunk focus</span>
             </a>
             <a href="simple-desk.html" class="environment">
                 <span class="env-label">🌙 THE MOON</span>
@@ -183,7 +188,7 @@
     </div>
     
     <div class="footer">
-        > different rooms for different minds... more environments coming soon
+        > INTENTION v1.0 // more focus apps in development
     </div>
 </body>
 </html>

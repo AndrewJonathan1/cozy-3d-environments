@@ -107,9 +107,22 @@
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 2.5, 4.0); // Much higher and farther back for better overview
         
+        // Player movement variables
+        let moveSpeed = 0.1;
+        let keys = {};
+        let targetLookX = 0, targetLookY = 1.1;
+        
+        // Keyboard controls
+        document.addEventListener('keydown', (event) => {
+            keys[event.code] = true;
+        });
+        
+        document.addEventListener('keyup', (event) => {
+            keys[event.code] = false;
+        });
+        
         // Mouse controls
         let mouseX = 0, mouseY = 0;
-        let targetLookX = 0, targetLookY = 1.1; // Look down at desk more
         
         document.addEventListener('mousemove', (event) => {
             mouseX = (event.clientX - window.innerWidth / 2) / window.innerWidth;
@@ -119,6 +132,31 @@
             targetLookX = mouseX * 0.3; // Very subtle left/right panning
             targetLookY = 1.1 + (mouseY * -0.1); // Very subtle up/down with bias toward desk
         });
+        
+        // Player movement function
+        function updatePlayerMovement() {
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            
+            if (keys['KeyW'] || keys['ArrowUp']) {
+                camera.position.add(forward.multiplyScalar(moveSpeed));
+            }
+            if (keys['KeyS'] || keys['ArrowDown']) {
+                camera.position.add(forward.multiplyScalar(-moveSpeed));
+            }
+            if (keys['KeyA'] || keys['ArrowLeft']) {
+                camera.position.add(right.multiplyScalar(-moveSpeed));
+            }
+            if (keys['KeyD'] || keys['ArrowRight']) {
+                camera.position.add(right.multiplyScalar(moveSpeed));
+            }
+            if (keys['Space']) {
+                camera.position.y += moveSpeed;
+            }
+            if (keys['ShiftLeft'] || keys['ShiftRight']) {
+                camera.position.y -= moveSpeed;
+            }
+        }
         
         // WebGL renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -149,6 +187,88 @@
         deskLight.castShadow = true;
         scene.add(deskLight);
         
+        // Floating help instructions
+        function createHelpPanel() {
+            const helpElement = document.createElement('div');
+            helpElement.innerHTML = `
+                <div id="helpPanel" style="
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    width: 300px;
+                    background: linear-gradient(145deg, #3a2f2a, #2a1f1a);
+                    border: 2px solid #d4a574;
+                    border-radius: 8px;
+                    padding: 20px;
+                    color: #e6d4c4;
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+                    font-size: 12px;
+                    z-index: 1000;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                    transition: all 0.3s ease;
+                ">
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 15px;
+                        border-bottom: 1px solid #8b7355;
+                        padding-bottom: 10px;
+                    ">
+                        <span style="color: #d4a574; font-weight: bold;">🌙 LUNAR.CONTROLS</span>
+                        <button id="helpToggle" style="
+                            background: none;
+                            border: 1px solid #d4a574;
+                            color: #d4a574;
+                            cursor: pointer;
+                            padding: 2px 8px;
+                            border-radius: 4px;
+                            font-size: 10px;
+                        ">−</button>
+                    </div>
+                    <div id="helpContent">
+                        <div style="margin-bottom: 12px;">
+                            <strong style="color: #d4a574;">MOVEMENT:</strong><br>
+                            W/A/S/D or Arrow Keys - Move<br>
+                            Space - Float up<br>
+                            Shift - Float down<br>
+                            Mouse - Look around
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <strong style="color: #d4a574;">EDITOR:</strong><br>
+                            Drag frame - Move editor<br>
+                            Resize handles - Scale editor<br>
+                            Auto-saves your text
+                        </div>
+                        <div>
+                            <strong style="color: #d4a574;">MUSIC:</strong><br>
+                            Click play/pause button
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(helpElement);
+            
+            // Toggle functionality
+            const toggleBtn = document.getElementById('helpToggle');
+            const content = document.getElementById('helpContent');
+            const panel = document.getElementById('helpPanel');
+            let isMinimized = false;
+            
+            toggleBtn.addEventListener('click', () => {
+                if (isMinimized) {
+                    content.style.display = 'block';
+                    panel.style.width = '300px';
+                    toggleBtn.textContent = '−';
+                } else {
+                    content.style.display = 'none';
+                    panel.style.width = '180px';
+                    toggleBtn.textContent = '+';
+                }
+                isMinimized = !isMinimized;
+            });
+        }
+        
         // Load wooden table
         const loader = new GLTFLoader();
         loader.load(
@@ -162,6 +282,9 @@
                 setTimeout(() => {
                     document.getElementById('loadingScreen').style.display = 'none';
                 }, 500);
+                
+                // Create help panel
+                createHelpPanel();
                 
                 const table = gltf.scene;
                 table.position.set(0, 0, 1.5); // Table closer to camera
@@ -185,6 +308,7 @@
             function (error) {
                 console.log('Table loading failed:', error);
                 document.getElementById('loadingScreen').style.display = 'none';
+                createHelpPanel();
                 // Fallback simple table (desk is 2 wide, 1.2 deep)
                 const tableGeometry = new THREE.BoxGeometry(2, 0.1, 1.2);
                 const tableMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
@@ -265,7 +389,7 @@
         // HTML text editor on monitor
         const textEditorElement = document.createElement('div');
         textEditorElement.innerHTML = `
-            <div style="
+            <div id="textEditorContainer" style="
                 width: 400px; 
                 height: 300px; 
                 background: linear-gradient(145deg, #3a2f2a, #2a1f1a);
@@ -279,6 +403,8 @@
                     inset 2px 2px 5px rgba(255,255,255,0.1),
                     inset -2px -2px 5px rgba(0,0,0,0.5),
                     0 10px 20px rgba(0,0,0,0.6);
+                position: relative;
+                cursor: move;
             ">
                 <textarea id="textEditor" placeholder="Hey Andrew,
 
@@ -309,6 +435,41 @@ The opposite of everything-in-one-place.
                     scrollbar-width: thin;
                     scrollbar-color: #8b7355 #2a1f1a;
                 "></textarea>
+                <!-- Resize handles -->
+                <div class="resize-handle resize-se" style="
+                    position: absolute;
+                    bottom: 0;
+                    right: 0;
+                    width: 20px;
+                    height: 20px;
+                    background: linear-gradient(135deg, #d4a574, #a67c52);
+                    cursor: se-resize;
+                    border-radius: 0 0 6px 0;
+                    opacity: 0.7;
+                "></div>
+                <div class="resize-handle resize-s" style="
+                    position: absolute;
+                    bottom: 0;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 20px;
+                    height: 8px;
+                    background: linear-gradient(135deg, #d4a574, #a67c52);
+                    cursor: s-resize;
+                    opacity: 0.7;
+                "></div>
+                <div class="resize-handle resize-e" style="
+                    position: absolute;
+                    right: 0;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 8px;
+                    height: 20px;
+                    background: linear-gradient(135deg, #d4a574, #a67c52);
+                    cursor: e-resize;
+                    opacity: 0.7;
+                "></div>
+                
                 <style>
                     #textEditor::-webkit-scrollbar {
                         width: 8px;
@@ -329,6 +490,9 @@ The opposite of everything-in-one-place.
                     #textEditor {
                         scrollbar-gutter: stable;
                     }
+                    .resize-handle:hover {
+                        opacity: 1 !important;
+                    }
                 </style>
                 "></textarea>
             </div>
@@ -343,9 +507,90 @@ The opposite of everything-in-one-place.
         css3dObject.scale.set(0.006, 0.006, 0.006); // Much bigger
         scene.add(css3dObject);
         
-        // LocalStorage functionality for text editor
+        // Drag and resize functionality
         setTimeout(() => {
+            const container = document.getElementById('textEditorContainer');
             const textEditor = document.getElementById('textEditor');
+            
+            if (container && textEditor) {
+                let isDragging = false;
+                let isResizing = false;
+                let currentHandle = null;
+                let startX, startY, startWidth, startHeight, startLeft, startTop;
+                
+                // Drag functionality
+                container.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('resize-handle')) return;
+                    if (e.target === textEditor) return; // Don't drag when clicking in textarea
+                    
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    const rect = container.getBoundingClientRect();
+                    startLeft = rect.left;
+                    startTop = rect.top;
+                    
+                    e.preventDefault();
+                });
+                
+                // Resize functionality
+                document.querySelectorAll('.resize-handle').forEach(handle => {
+                    handle.addEventListener('mousedown', (e) => {
+                        isResizing = true;
+                        currentHandle = handle.classList.contains('resize-se') ? 'se' : 
+                                      handle.classList.contains('resize-s') ? 's' : 'e';
+                        
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        startWidth = container.offsetWidth;
+                        startHeight = container.offsetHeight;
+                        
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+                
+                // Mouse move handler
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        const deltaX = e.clientX - startX;
+                        const deltaY = e.clientY - startY;
+                        
+                        // Update CSS3D object position
+                        css3dObject.position.x += deltaX * 0.003;
+                        css3dObject.position.y -= deltaY * 0.003;
+                        
+                        startX = e.clientX;
+                        startY = e.clientY;
+                    }
+                    
+                    if (isResizing && currentHandle) {
+                        const deltaX = e.clientX - startX;
+                        const deltaY = e.clientY - startY;
+                        
+                        let newWidth = startWidth;
+                        let newHeight = startHeight;
+                        
+                        if (currentHandle === 'se' || currentHandle === 'e') {
+                            newWidth = Math.max(300, startWidth + deltaX);
+                        }
+                        if (currentHandle === 'se' || currentHandle === 's') {
+                            newHeight = Math.max(200, startHeight + deltaY);
+                        }
+                        
+                        container.style.width = newWidth + 'px';
+                        container.style.height = newHeight + 'px';
+                    }
+                });
+                
+                // Mouse up handler
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    isResizing = false;
+                    currentHandle = null;
+                });
+            }
+            
             if (textEditor) {
                 // Load saved text or set default content
                 const savedText = localStorage.getItem('cozyDeskText');
@@ -528,6 +773,9 @@ The opposite of everything-in-one-place.
         // Animation with smooth camera movement
         function animate() {
             requestAnimationFrame(animate);
+            
+            // Update player movement
+            updatePlayerMovement();
             
             // Smooth camera look-at based on mouse
             camera.lookAt(targetLookX, targetLookY, -0.5);

@@ -87,9 +87,22 @@
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0.3, 0.5); // Much lower - actually sitting on bed
         
+        // Player movement variables
+        let moveSpeed = 0.05;
+        let keys = {};
+        let targetLookX = 0, targetLookY = 0.5;
+        
+        // Keyboard controls
+        document.addEventListener('keydown', (event) => {
+            keys[event.code] = true;
+        });
+        
+        document.addEventListener('keyup', (event) => {
+            keys[event.code] = false;
+        });
+        
         // Mouse controls for head movement
         let mouseX = 0, mouseY = 0;
-        let targetLookX = 0, targetLookY = 0.5; // Looking at lower wall-mounted monitor
         
         document.addEventListener('mousemove', (event) => {
             mouseX = (event.clientX - window.innerWidth / 2) / window.innerWidth;
@@ -99,6 +112,31 @@
             targetLookX = mouseX * 0.8;
             targetLookY = 0.5 + (mouseY * -0.1);
         });
+        
+        // Player movement function
+        function updatePlayerMovement() {
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            
+            if (keys['KeyW'] || keys['ArrowUp']) {
+                camera.position.add(forward.multiplyScalar(moveSpeed));
+            }
+            if (keys['KeyS'] || keys['ArrowDown']) {
+                camera.position.add(forward.multiplyScalar(-moveSpeed));
+            }
+            if (keys['KeyA'] || keys['ArrowLeft']) {
+                camera.position.add(right.multiplyScalar(-moveSpeed));
+            }
+            if (keys['KeyD'] || keys['ArrowRight']) {
+                camera.position.add(right.multiplyScalar(moveSpeed));
+            }
+            if (keys['Space']) {
+                camera.position.y += moveSpeed;
+            }
+            if (keys['ShiftLeft'] || keys['ShiftRight']) {
+                camera.position.y -= moveSpeed;
+            }
+        }
         
         // WebGL renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -196,6 +234,7 @@
                 
                 // Position interactive elements after bedroom loads
                 setupInteractiveElements();
+                createHelpPanel();
             },
             function (progress) {
                 if (progress.total > 0) {
@@ -210,6 +249,7 @@
                 console.log('Creating fallback bedroom scene');
                 createFallbackBedroom();
                 setupInteractiveElements();
+                createHelpPanel();
             }
         );
         
@@ -231,11 +271,93 @@
             scene.add(bed);
         }
         
+        // Floating help instructions
+        function createHelpPanel() {
+            const helpElement = document.createElement('div');
+            helpElement.innerHTML = `
+                <div id="helpPanel" style="
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    width: 300px;
+                    background: linear-gradient(145deg, #1a0a1a, #0a0a0a);
+                    border: 2px solid #00ffff;
+                    border-radius: 12px;
+                    padding: 20px;
+                    color: #00ffff;
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    z-index: 1000;
+                    box-shadow: 0 0 20px rgba(0,255,255,0.3);
+                    transition: all 0.3s ease;
+                ">
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 15px;
+                        border-bottom: 1px solid #ff00ff;
+                        padding-bottom: 10px;
+                    ">
+                        <span style="color: #ff00ff; font-weight: bold;">⚡ NEON.CONTROLS</span>
+                        <button id="helpToggle" style="
+                            background: none;
+                            border: 1px solid #00ffff;
+                            color: #00ffff;
+                            cursor: pointer;
+                            padding: 2px 8px;
+                            border-radius: 4px;
+                            font-size: 10px;
+                        ">−</button>
+                    </div>
+                    <div id="helpContent">
+                        <div style="margin-bottom: 12px;">
+                            <strong style="color: #ff00ff;">MOVEMENT:</strong><br>
+                            W/A/S/D or Arrow Keys - Move<br>
+                            Space - Float up<br>
+                            Shift - Float down<br>
+                            Mouse - Look around
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <strong style="color: #ff00ff;">EDITOR:</strong><br>
+                            Drag frame - Move editor<br>
+                            Resize handles - Scale editor<br>
+                            Auto-saves your text
+                        </div>
+                        <div>
+                            <strong style="color: #ff00ff;">MUSIC:</strong><br>
+                            Click play/pause button
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(helpElement);
+            
+            // Toggle functionality
+            const toggleBtn = document.getElementById('helpToggle');
+            const content = document.getElementById('helpContent');
+            const panel = document.getElementById('helpPanel');
+            let isMinimized = false;
+            
+            toggleBtn.addEventListener('click', () => {
+                if (isMinimized) {
+                    content.style.display = 'block';
+                    panel.style.width = '300px';
+                    toggleBtn.textContent = '−';
+                } else {
+                    content.style.display = 'none';
+                    panel.style.width = '180px';
+                    toggleBtn.textContent = '+';
+                }
+                isMinimized = !isMinimized;
+            });
+        }
+        
         function setupInteractiveElements() {
             // Interactive monitor screen (CSS3D) - positioned for optimal bedroom viewing
             const monitorScreenElement = document.createElement('div');
             monitorScreenElement.innerHTML = `
-                <div style="
+                <div id="textEditorContainer" style="
                     width: 600px; 
                     height: 400px; 
                     background: linear-gradient(145deg, #0a0a0a, #1a0a1a);
@@ -250,6 +372,8 @@
                         inset -2px -2px 8px rgba(255,0,255,0.3),
                         0 15px 40px rgba(255,0,255,0.6),
                         0 0 30px rgba(0,255,255,0.4);
+                    position: relative;
+                    cursor: move;
                 ">
                     <div style="
                         background: linear-gradient(145deg, #1a0a1a, #0a0a0a);
@@ -295,6 +419,41 @@ Excited to play with you!
                         scrollbar-width: thin;
                         scrollbar-color: #00ffff #1a0a1a;
                     "></textarea>
+                    <!-- Resize handles -->
+                    <div class="resize-handle resize-se" style="
+                        position: absolute;
+                        bottom: 0;
+                        right: 0;
+                        width: 20px;
+                        height: 20px;
+                        background: linear-gradient(135deg, #00ffff, #ff00ff);
+                        cursor: se-resize;
+                        border-radius: 0 0 12px 0;
+                        opacity: 0.7;
+                    "></div>
+                    <div class="resize-handle resize-s" style="
+                        position: absolute;
+                        bottom: 0;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        width: 20px;
+                        height: 8px;
+                        background: linear-gradient(135deg, #00ffff, #ff00ff);
+                        cursor: s-resize;
+                        opacity: 0.7;
+                    "></div>
+                    <div class="resize-handle resize-e" style="
+                        position: absolute;
+                        right: 0;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        width: 8px;
+                        height: 20px;
+                        background: linear-gradient(135deg, #00ffff, #ff00ff);
+                        cursor: e-resize;
+                        opacity: 0.7;
+                    "></div>
+                    
                     <style>
                         #neonTextEditor::-webkit-scrollbar {
                             width: 8px;
@@ -315,6 +474,9 @@ Excited to play with you!
                         #neonTextEditor {
                             scrollbar-gutter: stable;
                         }
+                        .resize-handle:hover {
+                            opacity: 1 !important;
+                        }
                     </style>
                     "></textarea>
                 </div>
@@ -330,9 +492,90 @@ Excited to play with you!
             css3dMonitor.scale.set(0.003, 0.003, 0.003);
             scene.add(css3dMonitor);
             
-            // LocalStorage functionality
+            // Drag and resize functionality
             setTimeout(() => {
+                const container = document.getElementById('textEditorContainer');
                 const textEditor = document.getElementById('neonTextEditor');
+                
+                if (container && textEditor) {
+                    let isDragging = false;
+                    let isResizing = false;
+                    let currentHandle = null;
+                    let startX, startY, startWidth, startHeight, startLeft, startTop;
+                    
+                    // Drag functionality
+                    container.addEventListener('mousedown', (e) => {
+                        if (e.target.classList.contains('resize-handle')) return;
+                        if (e.target === textEditor) return; // Don't drag when clicking in textarea
+                        
+                        isDragging = true;
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        const rect = container.getBoundingClientRect();
+                        startLeft = rect.left;
+                        startTop = rect.top;
+                        
+                        e.preventDefault();
+                    });
+                    
+                    // Resize functionality
+                    document.querySelectorAll('.resize-handle').forEach(handle => {
+                        handle.addEventListener('mousedown', (e) => {
+                            isResizing = true;
+                            currentHandle = handle.classList.contains('resize-se') ? 'se' : 
+                                          handle.classList.contains('resize-s') ? 's' : 'e';
+                            
+                            startX = e.clientX;
+                            startY = e.clientY;
+                            startWidth = container.offsetWidth;
+                            startHeight = container.offsetHeight;
+                            
+                            e.preventDefault();
+                            e.stopPropagation();
+                        });
+                    });
+                    
+                    // Mouse move handler
+                    document.addEventListener('mousemove', (e) => {
+                        if (isDragging) {
+                            const deltaX = e.clientX - startX;
+                            const deltaY = e.clientY - startY;
+                            
+                            // Update CSS3D object position
+                            css3dMonitor.position.x += deltaX * 0.003;
+                            css3dMonitor.position.y -= deltaY * 0.003;
+                            
+                            startX = e.clientX;
+                            startY = e.clientY;
+                        }
+                        
+                        if (isResizing && currentHandle) {
+                            const deltaX = e.clientX - startX;
+                            const deltaY = e.clientY - startY;
+                            
+                            let newWidth = startWidth;
+                            let newHeight = startHeight;
+                            
+                            if (currentHandle === 'se' || currentHandle === 'e') {
+                                newWidth = Math.max(400, startWidth + deltaX);
+                            }
+                            if (currentHandle === 'se' || currentHandle === 's') {
+                                newHeight = Math.max(300, startHeight + deltaY);
+                            }
+                            
+                            container.style.width = newWidth + 'px';
+                            container.style.height = newHeight + 'px';
+                        }
+                    });
+                    
+                    // Mouse up handler
+                    document.addEventListener('mouseup', () => {
+                        isDragging = false;
+                        isResizing = false;
+                        currentHandle = null;
+                    });
+                }
+                
                 if (textEditor) {
                     const savedText = localStorage.getItem('neonBedroomThoughts');
                     if (savedText) {
@@ -518,6 +761,9 @@ Excited to play with you!
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
+            
+            // Update player movement
+            updatePlayerMovement();
             
             // Smooth camera look-at targeting the monitor area
             camera.lookAt(targetLookX, targetLookY, -1.8);
