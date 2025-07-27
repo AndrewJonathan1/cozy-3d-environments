@@ -5,9 +5,67 @@
     <title>Neon Bedroom Workspace</title>
     <style>
         body { margin: 0; background: #0a0a0a; overflow: hidden; }
+        
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a, #1a0a1a);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            font-family: 'Courier New', monospace;
+            color: #00ffff;
+        }
+        
+        .loading-title {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px #00ffff;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+        
+        .loading-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px #00ffff;
+        }
+        
+        .loading-text {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
+    <div id="loadingScreen">
+        <div class="loading-title">⚡ INITIALIZING NEON BEDROOM ⚡</div>
+        <div class="loading-bar">
+            <div class="loading-progress" id="loadingProgress"></div>
+        </div>
+        <div class="loading-text" id="loadingText">Loading environment...</div>
+    </div>
     <script type="importmap">
     {
         "imports": {
@@ -89,6 +147,14 @@
             './objects/neon_bedroom/scene.gltf',
             function (gltf) {
                 console.log('Neon bedroom loaded successfully');
+                document.getElementById('loadingText').textContent = 'Loading complete!';
+                document.getElementById('loadingProgress').style.width = '100%';
+                
+                // Hide loading screen after a brief delay
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').style.display = 'none';
+                }, 500);
+                
                 const bedroomScene = gltf.scene;
                 bedroomScene.position.set(0, 0, 0);
                 bedroomScene.scale.set(1, 1, 1);
@@ -132,7 +198,12 @@
                 setupInteractiveElements();
             },
             function (progress) {
-                console.log('Bedroom loading progress:', (progress.loaded / progress.total * 100) + '%');
+                if (progress.total > 0) {
+                    const percentage = Math.min((progress.loaded / progress.total) * 100, 100);
+                    console.log('Bedroom loading progress:', percentage.toFixed(1) + '%');
+                    document.getElementById('loadingProgress').style.width = percentage + '%';
+                    document.getElementById('loadingText').textContent = `Loading bedroom... ${percentage.toFixed(0)}%`;
+                }
             },
             function (error) {
                 console.log('Error loading bedroom:', error);
@@ -195,17 +266,15 @@
                     
                     <textarea id="neonTextEditor" placeholder="Andrew,
 
-I'm building something that sparks joy.
+I had a lot of fun building this and excited to share with you.
 
 You know how Notion feels heavy? All your work dumped in one sterile place? This is the opposite.
 
-Imagine customizable rooms for thinking. Windows that float. Notes that stick to walls. Your capture app living inside a space you actually want to be in.
+Imagine customizable rooms for thinking. Notes that stick to walls. Radios that work.
 
-The 3D web is wild - we can build entire worlds for creativity. Thank you for inspiring me to play and explore. 
+The 3D web is wild - we can build entire worlds for focus creativity. Thank you for inspiring me to play and explore. 
 
-Holy shit, I can actually do this.
-
-Excited to see what we build together.
+Excited to play with you!
 
 ─ ◆ ─" style="
                         width: 100%;
@@ -268,14 +337,68 @@ Excited to see what we build together.
                     const savedText = localStorage.getItem('neonBedroomThoughts');
                     if (savedText) {
                         textEditor.value = savedText;
+                    } else {
+                        // Set the placeholder content as actual text for auto-scroll
+                        textEditor.value = textEditor.placeholder;
                     }
                     
                     textEditor.addEventListener('input', () => {
                         localStorage.setItem('neonBedroomThoughts', textEditor.value);
                     });
                     
-                    // Auto-focus the text editor
-                    textEditor.focus();
+                    // Super slow auto-scroll on first load (if no saved text)
+                    if (!savedText) {
+                        let autoScrollEnabled = true;
+                        
+                        // Stop auto-scroll if user interacts with scroll
+                        textEditor.addEventListener('scroll', () => {
+                            autoScrollEnabled = false;
+                        });
+                        
+                        // Stop auto-scroll if user types or clicks
+                        textEditor.addEventListener('input', () => {
+                            autoScrollEnabled = false;
+                        });
+                        
+                        textEditor.addEventListener('click', () => {
+                            autoScrollEnabled = false;
+                        });
+                        
+                        // Force scroll to top FIRST, then focus, then start scrolling
+                        setTimeout(() => {
+                            if (autoScrollEnabled) {
+                                // Force scroll to absolute top multiple times
+                                textEditor.scrollTop = 0;
+                                textEditor.setSelectionRange(0, 0); // Move cursor to start
+                                textEditor.scrollTop = 0; // Force again
+                                
+                                console.log('Current scrollTop after reset:', textEditor.scrollTop);
+                                console.log('ScrollHeight:', textEditor.scrollHeight, 'ClientHeight:', textEditor.clientHeight);
+                                
+                                // Now focus after positioning
+                                textEditor.focus();
+                                textEditor.scrollTop = 0; // Force again after focus
+                                
+                                // Wait another moment, then start scrolling
+                                setTimeout(() => {
+                                    if (autoScrollEnabled) {
+                                        console.log('Starting Star Wars style auto-scroll from current position');
+                                        
+                                        // Very slow auto-scroll down like Star Wars
+                                        const autoScroll = () => {
+                                            if (autoScrollEnabled && textEditor.scrollTop < textEditor.scrollHeight - textEditor.clientHeight) {
+                                                textEditor.scrollTop += 0.5; // Slow scroll down
+                                                requestAnimationFrame(autoScroll);
+                                            }
+                                        };
+                                        
+                                        // Start scrolling down from current position
+                                        autoScroll();
+                                    }
+                                }, 300);
+                            }
+                        }, 200);
+                    }
                 }
             }, 100);
             

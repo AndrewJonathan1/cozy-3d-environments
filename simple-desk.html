@@ -5,9 +5,67 @@
     <title>Simple Desk Setup</title>
     <style>
         body { margin: 0; background: #222; overflow: hidden; }
+        
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #ffffff;
+        }
+        
+        .loading-title {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px #ffffff;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+        
+        .loading-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #888888, #cccccc);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px #ffffff;
+        }
+        
+        .loading-text {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
+    <div id="loadingScreen">
+        <div class="loading-title">🌙 INITIALIZING LUNAR WORKSPACE 🌙</div>
+        <div class="loading-bar">
+            <div class="loading-progress" id="loadingProgress"></div>
+        </div>
+        <div class="loading-text" id="loadingText">Loading environment...</div>
+    </div>
     <script type="importmap">
     {
         "imports": {
@@ -97,6 +155,14 @@
             './objects/wooden_table_02_4k.gltf/wooden_table_02_4k.gltf',
             function (gltf) {
                 console.log('Table loaded');
+                document.getElementById('loadingText').textContent = 'Loading complete!';
+                document.getElementById('loadingProgress').style.width = '100%';
+                
+                // Hide loading screen after a brief delay
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').style.display = 'none';
+                }, 500);
+                
                 const table = gltf.scene;
                 table.position.set(0, 0, 1.5); // Table closer to camera
                 table.scale.set(1.5, 1.5, 1.5);
@@ -108,9 +174,17 @@
                 });
                 scene.add(table);
             },
-            undefined,
+            function (progress) {
+                if (progress.total > 0) {
+                    const percentage = Math.min((progress.loaded / progress.total) * 100, 100);
+                    console.log('Table loading progress:', percentage.toFixed(1) + '%');
+                    document.getElementById('loadingProgress').style.width = percentage + '%';
+                    document.getElementById('loadingText').textContent = `Loading workspace... ${percentage.toFixed(0)}%`;
+                }
+            },
             function (error) {
                 console.log('Table loading failed:', error);
+                document.getElementById('loadingScreen').style.display = 'none';
                 // Fallback simple table (desk is 2 wide, 1.2 deep)
                 const tableGeometry = new THREE.BoxGeometry(2, 0.1, 1.2);
                 const tableMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
@@ -273,10 +347,13 @@ The opposite of everything-in-one-place.
         setTimeout(() => {
             const textEditor = document.getElementById('textEditor');
             if (textEditor) {
-                // Load saved text
+                // Load saved text or set default content
                 const savedText = localStorage.getItem('cozyDeskText');
                 if (savedText) {
                     textEditor.value = savedText;
+                } else {
+                    // Set the placeholder content as actual text for auto-scroll
+                    textEditor.value = textEditor.placeholder;
                 }
                 
                 // Save text on input
@@ -284,8 +361,59 @@ The opposite of everything-in-one-place.
                     localStorage.setItem('cozyDeskText', textEditor.value);
                 });
                 
-                // Auto-focus the text editor
-                textEditor.focus();
+                // Super slow auto-scroll on first load (if no saved text)
+                if (!savedText) {
+                    let autoScrollEnabled = true;
+                    
+                    // Stop auto-scroll if user interacts with scroll
+                    textEditor.addEventListener('scroll', () => {
+                        autoScrollEnabled = false;
+                    });
+                    
+                    // Stop auto-scroll if user types or clicks
+                    textEditor.addEventListener('input', () => {
+                        autoScrollEnabled = false;
+                    });
+                    
+                    textEditor.addEventListener('click', () => {
+                        autoScrollEnabled = false;
+                    });
+                    
+                    // Force scroll to top FIRST, then focus, then start scrolling
+                    setTimeout(() => {
+                        if (autoScrollEnabled) {
+                            // Force scroll to absolute top multiple times
+                            textEditor.scrollTop = 0;
+                            textEditor.setSelectionRange(0, 0); // Move cursor to start
+                            textEditor.scrollTop = 0; // Force again
+                            
+                            console.log('Current scrollTop after reset:', textEditor.scrollTop);
+                            console.log('ScrollHeight:', textEditor.scrollHeight, 'ClientHeight:', textEditor.clientHeight);
+                            
+                            // Now focus after positioning
+                            textEditor.focus();
+                            textEditor.scrollTop = 0; // Force again after focus
+                            
+                            // Wait another moment, then start scrolling
+                            setTimeout(() => {
+                                if (autoScrollEnabled) {
+                                    console.log('Starting Star Wars style auto-scroll from current position');
+                                    
+                                    // Very slow auto-scroll down like Star Wars
+                                    const autoScroll = () => {
+                                        if (autoScrollEnabled && textEditor.scrollTop < textEditor.scrollHeight - textEditor.clientHeight) {
+                                            textEditor.scrollTop += 0.5; // Slow scroll down
+                                            requestAnimationFrame(autoScroll);
+                                        }
+                                    };
+                                    
+                                    // Start scrolling down from current position
+                                    autoScroll();
+                                }
+                            }, 300);
+                        }
+                    }, 200);
+                }
             }
         }, 100);
         
