@@ -338,21 +338,36 @@
                             <strong style="color: #d4a574;">MUSIC:</strong><br>
                             Click play/pause button
                         </div>
-                        <div style="text-align: center;">
+                        <div style="text-align: center; display: flex; gap: 8px; justify-content: center;">
                             <button id="resetAllBtn" style="
                                 background: linear-gradient(145deg, #d4a574, #a67c52);
                                 border: 2px solid #8b7355;
                                 color: #2a1f1a;
-                                padding: 8px 16px;
+                                padding: 8px 12px;
                                 border-radius: 6px;
                                 cursor: pointer;
-                                font-size: 11px;
+                                font-size: 10px;
                                 font-weight: bold;
                                 box-shadow: 0 0 10px rgba(212,165,116,0.3);
                                 transition: all 0.2s ease;
                             " onmouseover="this.style.boxShadow='0 0 15px rgba(212,165,116,0.5)'" 
                                onmouseout="this.style.boxShadow='0 0 10px rgba(212,165,116,0.3)'">
                                 🔄 RESET ALL
+                            </button>
+                            <button id="fullscreenBtn" style="
+                                background: linear-gradient(145deg, #a67c52, #d4a574);
+                                border: 2px solid #8b7355;
+                                color: #2a1f1a;
+                                padding: 8px 12px;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 10px;
+                                font-weight: bold;
+                                box-shadow: 0 0 10px rgba(212,165,116,0.3);
+                                transition: all 0.2s ease;
+                            " onmouseover="this.style.boxShadow='0 0 15px rgba(212,165,116,0.5)'" 
+                               onmouseout="this.style.boxShadow='0 0 10px rgba(212,165,116,0.3)'">
+                                🖥️ FULLSCREEN
                             </button>
                         </div>
                     </div>
@@ -412,6 +427,49 @@
                         resetAllBtn.style.background = 'linear-gradient(145deg, #d4a574, #a67c52)';
                     }, 150);
                 });
+            }
+            
+            // Fullscreen functionality
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            if (fullscreenBtn) {
+                let isFullscreen = false;
+                
+                function updateFullscreenButton() {
+                    if (document.fullscreenElement) {
+                        fullscreenBtn.textContent = '🚪 EXIT FULLSCREEN';
+                        isFullscreen = true;
+                    } else {
+                        fullscreenBtn.textContent = '🖥️ FULLSCREEN';
+                        isFullscreen = false;
+                    }
+                }
+                
+                fullscreenBtn.addEventListener('click', async () => {
+                    try {
+                        if (!isFullscreen) {
+                            // Enter fullscreen
+                            await document.documentElement.requestFullscreen();
+                        } else {
+                            // Exit fullscreen
+                            await document.exitFullscreen();
+                        }
+                        
+                        // Flash effect
+                        fullscreenBtn.style.background = 'linear-gradient(145deg, #ffffff, #d4a574)';
+                        setTimeout(() => {
+                            fullscreenBtn.style.background = 'linear-gradient(145deg, #a67c52, #d4a574)';
+                        }, 150);
+                        
+                    } catch (err) {
+                        console.log('Fullscreen not supported or failed:', err);
+                    }
+                });
+                
+                // Listen for fullscreen changes (including F11 key)
+                document.addEventListener('fullscreenchange', updateFullscreenButton);
+                
+                // Initial button state
+                updateFullscreenButton();
             }
         }
         
