@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Monitor with Live HTML Content</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+        
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #css3d-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        #css3d-container .interactive {
+            pointer-events: auto;
+        }
+        
+        /* The HTML content that will be displayed on the monitor */
+        #monitor-content {
+            width: 1024px;
+            height: 768px;
+            background: #000;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+        
+        /* Fake OS interface */
+        .desktop {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .taskbar {
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .window {
+            background: white;
+            margin: 20px;
+            flex: 1;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .window-header {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .window-control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .close { background: #ff5f57; }
+        .minimize { background: #ffbd2e; }
+        .maximize { background: #28ca42; }
+        
+        .window-content {
+            padding: 20px;
+            flex: 1;
+            overflow: auto;
+        }
+        
+        .app-content {
+            text-align: center;
+        }
+        
+        .counter {
+            font-size: 48px;
+            margin: 20px 0;
+            color: #333;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        .todo-list {
+            margin-top: 30px;
+            text-align: left;
+        }
+        
+        .todo-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .todo-item {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .delete-btn {
+            background: #ff5f57;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="webgl-container"></div>
+    <div id="css3d-container"></div>
+    
+    <!-- The HTML content that will be rendered on the 3D monitor -->
+    <div id="monitor-content" style="display: none;">
+        <div class="desktop">
+            <div class="taskbar">
+                <strong>3D Desktop Demo</strong>
+                <span style="margin-left: auto;">Live HTML in 3D!</span>
+            </div>
+            <div class="window">
+                <div class="window-header">
+                    <span>Interactive App</span>
+                    <div class="window-controls">
+                        <div class="window-control close"></div>
+                        <div class="window-control minimize"></div>
+                        <div class="window-control maximize"></div>
+                    </div>
+                </div>
+                <div class="window-content">
+                    <div class="app-content">
+                        <h1>Real HTML App in 3D!</h1>
+                        <p>This is a fully interactive HTML application rendered on a 3D monitor.</p>
+                        
+                        <div class="counter" id="counter">0</div>
+                        <button onclick="incrementCounter()">Increment</button>
+                        <button onclick="decrementCounter()">Decrement</button>
+                        
+                        <div class="todo-list">
+                            <h3>Todo List (Fully Interactive!)</h3>
+                            <input type="text" class="todo-input" id="todoInput" placeholder="Add a new todo..." onkeypress="if(event.key==='Enter') addTodo()">
+                            <button onclick="addTodo()">Add Todo</button>
+                            <div id="todoItems"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <p><strong>Controls:</strong></p>
+        <p>Mouse: Rotate camera</p>
+        <p>Scroll: Zoom in/out</p>
+        <p>Click on the monitor screen to interact!</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // First, let's add the CSS3DRenderer code since it's not in the CDN
+        const CSS3DRenderer = function () {
+            const _this = this;
+            let _width, _height;
+            let _widthHalf, _heightHalf;
+            const cache = { camera: { fov: 0, style: '' }, objects: new WeakMap() };
+            const domElement = document.createElement('div');
+            domElement.style.overflow = 'hidden';
+            this.domElement = domElement;
+            const cameraElement = document.createElement('div');
+            cameraElement.style.transformStyle = 'preserve-3d';
+            cameraElement.style.pointerEvents = 'none';
+            domElement.appendChild(cameraElement);
+
+            this.getSize = function () {
+                return { width: _width, height: _height };
+            };
+
+            this.setSize = function (width, height) {
+                _width = width;
+                _height = height;
+                _widthHalf = _width / 2;
+                _heightHalf = _height / 2;
+                domElement.style.width = width + 'px';
+                domElement.style.height = height + 'px';
+                cameraElement.style.width = width + 'px';
+                cameraElement.style.height = height + 'px';
+            };
+
+            function epsilon(value) {
+                return Math.abs(value) < 1e-10 ? 0 : value;
+            }
+
+            function getCameraCSSMatrix(matrix) {
+                const elements = matrix.elements;
+                return 'matrix3d(' +
+                    epsilon(elements[0]) + ',' +
+                    epsilon(-elements[1]) + ',' +
+                    epsilon(elements[2]) + ',' +
+                    epsilon(elements[3]) + ',' +
+                    epsilon(elements[4]) + ',' +
+                    epsilon(-elements[5]) + ',' +
+                    epsilon(elements[6]) + ',' +
+                    epsilon(elements[7]) + ',' +
+                    epsilon(elements[8]) + ',' +
+                    epsilon(-elements[9]) + ',' +
+                    epsilon(elements[10]) + ',' +
+                    epsilon(elements[11]) + ',' +
+                    epsilon(elements[12]) + ',' +
+                    epsilon(-elements[13]) + ',' +
+                    epsilon(elements[14]) + ',' +
+                    epsilon(elements[15]) +
+                ')';
+            }
+
+            function getObjectCSSMatrix(matrix) {
+                const elements = matrix.elements;
+                const matrix3d = 'matrix3d(' +
+                    epsilon(elements[0]) + ',' +
+                    epsilon(elements[1]) + ',' +
+                    epsilon(elements[2]) + ',' +
+                    epsilon(elements[3]) + ',' +
+                    epsilon(-elements[4]) + ',' +
+                    epsilon(-elements[5]) + ',' +
+                    epsilon(-elements[6]) + ',' +
+                    epsilon(-elements[7]) + ',' +
+                    epsilon(elements[8]) + ',' +
+                    epsilon(elements[9]) + ',' +
+                    epsilon(elements[10]) + ',' +
+                    epsilon(elements[11]) + ',' +
+                    epsilon(elements[12]) + ',' +
+                    epsilon(elements[13]) + ',' +
+                    epsilon(elements[14]) + ',' +
+                    epsilon(elements[15]) +
+                ')';
+                return 'translate(-50%,-50%)' + matrix3d;
+            }
+
+            function renderObject(object, scene, camera, cameraCSSMatrix) {
+                if (object.isCSS3DObject) {
+                    const visible = object.visible === true && object.layers.test(camera.layers) === true;
+                    object.element.style.display = (visible === true) ? '' : 'none';
+
+                    if (visible === true) {
+                        object.onBeforeRender(_this, scene, camera);
+                        let style;
+
+                        style = 'translate(' + _widthHalf + 'px,' + _heightHalf + 'px)';
+                        style += cameraCSSMatrix;
+                        style += getObjectCSSMatrix(object.matrixWorld);
+
+                        const element = object.element;
+                        const cachedObject = cache.objects.get(object);
+
+                        if (cachedObject === undefined || cachedObject.style !== style) {
+                            element.style.transform = style;
+                            const objectData = { style: style };
+                            cache.objects.set(object, objectData);
+                        }
+
+                        element.style.display = (visible === true) ? '' : 'none';
+                        object.onAfterRender(_this, scene, camera);
+                    }
+                }
+
+                for (let i = 0, l = object.children.length; i < l; i++) {
+                    renderObject(object.children[i], scene, camera, cameraCSSMatrix);
+                }
+            }
+
+            this.render = function (scene, camera) {
+                const fov = camera.projectionMatrix.elements[5] * _heightHalf;
+                if (cache.camera.fov !== fov) {
+                    domElement.style.perspective = fov + 'px';
+                    cache.camera.fov = fov;
+                }
+
+                if (camera.view && camera.view.enabled) {
+                    // Camera view code...
+                } else {
+                    scene.matrixWorldAutoUpdate && scene.updateMatrixWorld();
+                    if (camera.parent === null && camera.matrixWorldAutoUpdate) camera.updateMatrixWorld();
+                    let tx, ty;
+                    tx = _widthHalf;
+                    ty = _heightHalf;
+                    const cameraCSSMatrix = getCameraCSSMatrix(camera.matrixWorldInverse);
+                    const style = 'translate(' + tx + 'px,' + ty + 'px)' + cameraCSSMatrix;
+                    if (cache.camera.style !== style) {
+                        cameraElement.style.transform = style;
+                        cache.camera.style = style;
+                    }
+                    renderObject(scene, scene, camera, cameraCSSMatrix);
+                }
+            };
+        };
+
+        class CSS3DObject extends THREE.Object3D {
+            constructor(element) {
+                super();
+                this.element = element || document.createElement('div');
+                this.element.style.position = 'absolute';
+                this.element.style.pointerEvents = 'auto';
+                this.element.style.userSelect = 'none';
+                this.element.classList.add('interactive');
+                this.isCSS3DObject = true;
+                
+                this.addEventListener('removed', function () {
+                    this.traverse(function (object) {
+                        if (object.element instanceof Element && object.element.parentNode !== null) {
+                            object.element.parentNode.removeChild(object.element);
+                        }
+                    });
+                });
+            }
+        }
+
+        // Interactive counter logic
+        let counter = 0;
+        function incrementCounter() {
+            counter++;
+            document.getElementById('counter').textContent = counter;
+        }
+        
+        function decrementCounter() {
+            counter--;
+            document.getElementById('counter').textContent = counter;
+        }
+        
+        // Todo list logic
+        let todos = [];
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+            if (text) {
+                todos.push({ id: Date.now(), text });
+                input.value = '';
+                renderTodos();
+            }
+        }
+        
+        function deleteTodo(id) {
+            todos = todos.filter(todo => todo.id !== id);
+            renderTodos();
+        }
+        
+        function renderTodos() {
+            const container = document.getElementById('todoItems');
+            container.innerHTML = todos.map(todo => `
+                <div class="todo-item">
+                    <span>${todo.text}</span>
+                    <button class="delete-btn" onclick="deleteTodo(${todo.id})">Delete</button>
+                </div>
+            `).join('');
+        }
+        
+        // Three.js setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a1a);
+        
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 0, 5);
+        
+        // WebGL renderer for 3D objects
+        const webglRenderer = new THREE.WebGLRenderer({ antialias: true });
+        webglRenderer.setSize(window.innerWidth, window.innerHeight);
+        webglRenderer.setPixelRatio(window.devicePixelRatio);
+        document.getElementById('webgl-container').appendChild(webglRenderer.domElement);
+        
+        // CSS3D renderer for HTML content
+        const css3dRenderer = new CSS3DRenderer();
+        css3dRenderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('css3d-container').appendChild(css3dRenderer.domElement);
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 5, 5);
+        scene.add(directionalLight);
+        
+        // Create monitor frame (WebGL)
+        const monitorGroup = new THREE.Group();
+        
+        // Monitor screen (bezel)
+        const screenGeometry = new THREE.BoxGeometry(3.2, 2.4, 0.1);
+        const screenMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 });
+        const screen = new THREE.Mesh(screenGeometry, screenMaterial);
+        monitorGroup.add(screen);
+        
+        // Monitor stand
+        const standGeometry = new THREE.BoxGeometry(0.8, 0.5, 0.05);
+        const standMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+        const stand = new THREE.Mesh(standGeometry, standMaterial);
+        stand.position.y = -1.45;
+        monitorGroup.add(stand);
+        
+        // Monitor base
+        const baseGeometry = new THREE.BoxGeometry(1.2, 0.1, 0.8);
+        const base = new THREE.Mesh(baseGeometry, standMaterial);
+        base.position.y = -1.75;
+        monitorGroup.add(base);
+        
+        scene.add(monitorGroup);
+        
+        // Create CSS3D object for the monitor content
+        const monitorContent = document.getElementById('monitor-content');
+        monitorContent.style.display = 'block';
+        
+        const css3dObject = new CSS3DObject(monitorContent);
+        css3dObject.scale.set(0.003, 0.003, 0.003); // Scale down to fit monitor
+        css3dObject.position.set(0, 0, 0.051); // Slightly in front of the monitor screen
+        
+        // Add to scene directly instead of monitor group to avoid transform issues
+        scene.add(css3dObject);
+        
+        // Make sure the CSS3D object follows the monitor rotation
+        monitorGroup.userData.css3dObject = css3dObject;
+        
+        // Mouse controls
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+        
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - window.innerWidth / 2) / window.innerWidth;
+            mouseY = (event.clientY - window.innerHeight / 2) / window.innerHeight;
+        });
+        
+        // Zoom controls
+        let zoom = 5;
+        document.addEventListener('wheel', (event) => {
+            zoom += event.deltaY * 0.01;
+            zoom = Math.max(2, Math.min(10, zoom));
+            camera.position.z = zoom;
+        });
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Smooth rotation based on mouse position
+            targetRotationY = mouseX * Math.PI * 0.5;
+            targetRotationX = -mouseY * Math.PI * 0.3;
+            
+            monitorGroup.rotation.y += (targetRotationY - monitorGroup.rotation.y) * 0.1;
+            monitorGroup.rotation.x += (targetRotationX - monitorGroup.rotation.x) * 0.1;
+            
+            // Sync CSS3D object rotation with monitor
+            const css3dObject = monitorGroup.userData.css3dObject;
+            if (css3dObject) {
+                css3dObject.rotation.copy(monitorGroup.rotation);
+                css3dObject.position.copy(monitorGroup.position);
+                css3dObject.position.z += 0.051; // Keep it in front of the screen
+            }
+            
+            webglRenderer.render(scene, camera);
+            css3dRenderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            webglRenderer.setSize(window.innerWidth, window.innerHeight);
+            css3dRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        animate();
+    </script>
+</body>
+</html>

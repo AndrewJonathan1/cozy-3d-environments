@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Proof of Concept: WebGL + CSS3D</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        #css3d-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        #css3d-container * {
+            pointer-events: auto;
+        }
+        
+        .floating-button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
+            transition: all 0.3s;
+        }
+        
+        .floating-button:hover {
+            background: #ff6666;
+            transform: scale(1.1);
+        }
+        
+        .status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="webgl-container"></div>
+    <div id="css3d-container"></div>
+    
+    <div class="status">
+        <h3>Proof of Concept</h3>
+        <p>✅ Spinning cube (WebGL)</p>
+        <p>✅ Interactive button (CSS3D)</p>
+        <p>Button clicks: <span id="clickCount">0</span></p>
+    </div>
+    
+    <script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.155.0/examples/jsm/renderers/CSS3DRenderer.js" type="module"></script>
+    
+    <script>
+        let clickCount = 0;
+        
+        function buttonClicked() {
+            clickCount++;
+            document.getElementById('clickCount').textContent = clickCount;
+            console.log('Button clicked!', clickCount);
+        }
+        
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+        
+        // WebGL Renderer for 3D objects
+        const webglRenderer = new THREE.WebGLRenderer({ alpha: true });
+        webglRenderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('webgl-container').appendChild(webglRenderer.domElement);
+        
+        // CSS3D Renderer for HTML elements
+        const css3dRenderer = new THREE.CSS3DRenderer();
+        css3dRenderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('css3d-container').appendChild(css3dRenderer.domElement);
+        
+        // Create a spinning cube (WebGL)
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0x00ff00,
+            wireframe: true
+        });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+        
+        // Create HTML button (CSS3D)
+        const buttonElement = document.createElement('button');
+        buttonElement.className = 'floating-button';
+        buttonElement.textContent = 'Click Me!';
+        buttonElement.onclick = buttonClicked;
+        
+        const css3dObject = new THREE.CSS3DObject(buttonElement);
+        css3dObject.position.set(2, 0, 0);
+        scene.add(css3dObject);
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotate the cube
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+            
+            // Render both scenes
+            webglRenderer.render(scene, camera);
+            css3dRenderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            webglRenderer.setSize(window.innerWidth, window.innerHeight);
+            css3dRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Working 3D HTML</title>
+    <style>
+        body { margin: 0; background: #222; overflow: hidden; }
+        .floating-div {
+            position: absolute;
+            width: 400px;
+            height: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(255,255,255,0.5);
+            transform-style: preserve-3d;
+        }
+        h1 { color: #333; text-align: center; }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .counter { font-size: 48px; text-align: center; margin: 20px 0; }
+        input { width: 90%; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div id="floating-content" class="floating-div">
+        <h1>3D HTML Content!</h1>
+        <div class="counter" id="counter">0</div>
+        <button onclick="increment()">Increment</button>
+        <button onclick="decrement()">Decrement</button>
+        <input type="text" placeholder="Type here..." oninput="showText(this.value)">
+        <div id="output" style="margin-top: 10px; font-style: italic;"></div>
+    </div>
+    
+    <script>
+        let count = 0;
+        
+        function increment() {
+            count++;
+            document.getElementById('counter').textContent = count;
+        }
+        
+        function decrement() {
+            count--;
+            document.getElementById('counter').textContent = count;
+        }
+        
+        function showText(value) {
+            document.getElementById('output').textContent = 'You typed: ' + value;
+        }
+        
+        // Simple 3D transform using CSS
+        const content = document.getElementById('floating-content');
+        let mouseX = 0, mouseY = 0;
+        let rotX = 0, rotY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) / window.innerWidth;
+            mouseY = (e.clientY - window.innerHeight / 2) / window.innerHeight;
+        });
+        
+        let zoom = 1;
+        document.addEventListener('wheel', (e) => {
+            zoom += e.deltaY * -0.001;
+            zoom = Math.max(0.5, Math.min(2, zoom));
+        });
+        
+        function animate() {
+            rotY += (mouseX * 45 - rotY) * 0.1;
+            rotX += (-mouseY * 45 - rotX) * 0.1;
+            
+            content.style.transform = `
+                translate(-50%, -50%) 
+                translate3d(${window.innerWidth/2}px, ${window.innerHeight/2}px, 0)
+                rotateX(${rotX}deg) 
+                rotateY(${rotY}deg)
+                scale(${zoom})
+            `;
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+    </script>
+</body>
+</html>

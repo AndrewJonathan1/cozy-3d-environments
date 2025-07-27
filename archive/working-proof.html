@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Working Proof: WebGL + CSS3D</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        #css3d-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        #css3d-container * {
+            pointer-events: auto;
+        }
+        
+        .floating-button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
+            transition: all 0.3s;
+        }
+        
+        .floating-button:hover {
+            background: #ff6666;
+            transform: scale(1.1);
+        }
+        
+        .status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="webgl-container"></div>
+    <div id="css3d-container"></div>
+    
+    <div class="status">
+        <h3>Working Proof of Concept</h3>
+        <p>✅ Spinning cube (WebGL)</p>
+        <p>✅ Interactive button (CSS3D)</p>
+        <p>Button clicks: <span id="clickCount">0</span></p>
+        <p style="color: #888; font-size: 12px;">Move mouse to rotate view</p>
+    </div>
+    
+    <script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
+    
+    <script>
+        // Simple CSS3DRenderer implementation
+        function CSS3DRenderer() {
+            const _this = this;
+            let _width, _height;
+            let _widthHalf, _heightHalf;
+            
+            const domElement = document.createElement('div');
+            domElement.style.overflow = 'hidden';
+            this.domElement = domElement;
+            
+            const cameraElement = document.createElement('div');
+            cameraElement.style.transformStyle = 'preserve-3d';
+            cameraElement.style.pointerEvents = 'none';
+            domElement.appendChild(cameraElement);
+            
+            this.setSize = function(width, height) {
+                _width = width;
+                _height = height;
+                _widthHalf = _width / 2;
+                _heightHalf = _height / 2;
+                
+                domElement.style.width = width + 'px';
+                domElement.style.height = height + 'px';
+                
+                cameraElement.style.width = width + 'px';
+                cameraElement.style.height = height + 'px';
+            };
+            
+            function getCameraCSSMatrix(matrix) {
+                const elements = matrix.elements;
+                return 'matrix3d(' +
+                    elements[0] + ',' + (-elements[1]) + ',' + elements[2] + ',' + elements[3] + ',' +
+                    elements[4] + ',' + (-elements[5]) + ',' + elements[6] + ',' + elements[7] + ',' +
+                    elements[8] + ',' + (-elements[9]) + ',' + elements[10] + ',' + elements[11] + ',' +
+                    elements[12] + ',' + (-elements[13]) + ',' + elements[14] + ',' + elements[15] + ')';
+            }
+            
+            function getObjectCSSMatrix(matrix) {
+                const elements = matrix.elements;
+                return 'translate(-50%,-50%) matrix3d(' +
+                    elements[0] + ',' + elements[1] + ',' + elements[2] + ',' + elements[3] + ',' +
+                    (-elements[4]) + ',' + (-elements[5]) + ',' + (-elements[6]) + ',' + (-elements[7]) + ',' +
+                    elements[8] + ',' + elements[9] + ',' + elements[10] + ',' + elements[11] + ',' +
+                    elements[12] + ',' + elements[13] + ',' + elements[14] + ',' + elements[15] + ')';
+            }
+            
+            this.render = function(scene, camera) {
+                const fov = camera.projectionMatrix.elements[5] * _heightHalf;
+                domElement.style.perspective = fov + 'px';
+                
+                scene.updateMatrixWorld();
+                if (camera.parent === null) camera.updateMatrixWorld();
+                
+                const cameraCSSMatrix = getCameraCSSMatrix(camera.matrixWorldInverse);
+                const style = 'translate(' + _widthHalf + 'px,' + _heightHalf + 'px)' + cameraCSSMatrix;
+                cameraElement.style.transform = style;
+                
+                // Render all CSS3D objects
+                scene.traverse(function(object) {
+                    if (object.isCSS3DObject) {
+                        const visible = object.visible && object.layers.test(camera.layers);
+                        object.element.style.display = visible ? '' : 'none';
+                        
+                        if (visible) {
+                            const objectStyle = 'translate(' + _widthHalf + 'px,' + _heightHalf + 'px)' + 
+                                              cameraCSSMatrix + getObjectCSSMatrix(object.matrixWorld);
+                            object.element.style.transform = objectStyle;
+                        }
+                    }
+                });
+            };
+        }
+        
+        class CSS3DObject extends THREE.Object3D {
+            constructor(element) {
+                super();
+                this.element = element;
+                this.element.style.position = 'absolute';
+                this.element.style.pointerEvents = 'auto';
+                this.isCSS3DObject = true;
+            }
+        }
+        
+        // App logic
+        let clickCount = 0;
+        
+        function buttonClicked() {
+            clickCount++;
+            document.getElementById('clickCount').textContent = clickCount;
+            console.log('Button clicked in 3D space!', clickCount);
+        }
+        
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+        
+        // WebGL Renderer for 3D objects
+        const webglRenderer = new THREE.WebGLRenderer({ alpha: true });
+        webglRenderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('webgl-container').appendChild(webglRenderer.domElement);
+        
+        // CSS3D Renderer for HTML elements
+        const css3dRenderer = new CSS3DRenderer();
+        css3dRenderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('css3d-container').appendChild(css3dRenderer.domElement);
+        
+        // Create a spinning cube (WebGL)
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0x00ff00,
+            wireframe: true
+        });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+        
+        // Create HTML button (CSS3D) - make it VERY visible
+        const buttonElement = document.createElement('button');
+        buttonElement.className = 'floating-button';
+        buttonElement.textContent = 'CLICK ME!';
+        buttonElement.onclick = buttonClicked;
+        buttonElement.style.fontSize = '24px';
+        buttonElement.style.padding = '30px 60px';
+        buttonElement.style.background = '#ff0000';
+        buttonElement.style.zIndex = '9999';
+        
+        const css3dObject = new CSS3DObject(buttonElement);
+        css3dObject.position.set(0, 200, 0); // Put it above the cube
+        scene.add(css3dObject);
+        
+        console.log('Button added to scene:', css3dObject);
+        
+        // Mouse controls
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - window.innerWidth / 2) / 200;
+            mouseY = (event.clientY - window.innerHeight / 2) / 200;
+        });
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // NO automatic rotation - only camera movement based on mouse
+            camera.position.x = Math.sin(mouseX) * 3;
+            camera.position.y = Math.sin(mouseY) * 1.5;
+            camera.position.z = 5;
+            camera.lookAt(scene.position);
+            
+            // Render both scenes
+            webglRenderer.render(scene, camera);
+            css3dRenderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            webglRenderer.setSize(window.innerWidth, window.innerHeight);
+            css3dRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSS 3D Room with Monitor</title>
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            perspective: 1000px;
+            perspective-origin: center center;
+        }
+        
+        .room {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transform-origin: center center;
+        }
+        
+        /* Room walls */
+        .wall {
+            position: absolute;
+            background: linear-gradient(135deg, #333, #222);
+            border: 2px solid #444;
+        }
+        
+        .floor {
+            width: 800px;
+            height: 800px;
+            transform: rotateX(90deg) translateZ(-200px);
+            background: linear-gradient(45deg, #2a2a2a, #1a1a1a);
+            left: 50%;
+            top: 50%;
+            margin-left: -400px;
+            margin-top: -400px;
+        }
+        
+        .back-wall {
+            width: 800px;
+            height: 600px;
+            transform: translateZ(-400px);
+            left: 50%;
+            top: 50%;
+            margin-left: -400px;
+            margin-top: -300px;
+        }
+        
+        .left-wall {
+            width: 800px;
+            height: 600px;
+            transform: rotateY(90deg) translateZ(-400px);
+            left: 50%;
+            top: 50%;
+            margin-left: -400px;
+            margin-top: -300px;
+        }
+        
+        .right-wall {
+            width: 800px;
+            height: 600px;
+            transform: rotateY(-90deg) translateZ(-400px);
+            left: 50%;
+            top: 50%;
+            margin-left: -400px;
+            margin-top: -300px;
+        }
+        
+        /* Monitor */
+        .monitor {
+            position: absolute;
+            width: 400px;
+            height: 250px;
+            background: #000;
+            border: 15px solid #333;
+            border-radius: 10px;
+            transform: translateZ(-350px) translateY(-50px);
+            left: 50%;
+            top: 50%;
+            margin-left: -200px;
+            margin-top: -125px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .monitor-stand {
+            position: absolute;
+            width: 60px;
+            height: 80px;
+            background: #333;
+            bottom: -80px;
+            left: 50%;
+            margin-left: -30px;
+        }
+        
+        .monitor-base {
+            position: absolute;
+            width: 150px;
+            height: 20px;
+            background: #333;
+            bottom: -100px;
+            left: 50%;
+            margin-left: -75px;
+            border-radius: 50%;
+        }
+        
+        /* HTML Content on Monitor Screen */
+        .monitor-screen {
+            position: absolute;
+            width: 370px;
+            height: 220px;
+            background: white;
+            margin: 15px;
+            border-radius: 5px;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow: hidden;
+            transform: translateZ(1px); /* Slightly forward from monitor */
+        }
+        
+        .desktop {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+        }
+        
+        .taskbar {
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10px;
+        }
+        
+        .window {
+            background: white;
+            margin: 10px;
+            flex: 1;
+            border-radius: 4px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .window-header {
+            background: #f0f0f0;
+            padding: 5px;
+            border-radius: 4px 4px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 3px;
+        }
+        
+        .window-control {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .close { background: #ff5f57; }
+        .minimize { background: #ffbd2e; }
+        .maximize { background: #28ca42; }
+        
+        .window-content {
+            padding: 10px;
+            flex: 1;
+            overflow: auto;
+            text-align: center;
+        }
+        
+        .counter {
+            font-size: 24px;
+            margin: 10px 0;
+            color: #333;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 10px;
+            border-radius: 2px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        input {
+            width: 80%;
+            padding: 5px;
+            font-size: 10px;
+            border: 1px solid #ccc;
+            border-radius: 2px;
+            margin: 5px 0;
+        }
+        
+        /* Desk */
+        .desk {
+            position: absolute;
+            width: 600px;
+            height: 300px;
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            transform: rotateX(90deg) translateZ(-150px);
+            left: 50%;
+            top: 50%;
+            margin-left: -300px;
+            margin-top: -150px;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        
+        /* Room lighting */
+        .room::before {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            left: 50%;
+            top: 20%;
+            margin-left: -50px;
+            margin-top: -50px;
+            transform: translateZ(-200px);
+            border-radius: 50%;
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="room" id="room">
+        <!-- Room walls -->
+        <div class="wall floor"></div>
+        <div class="wall back-wall"></div>
+        <div class="wall left-wall"></div>
+        <div class="wall right-wall"></div>
+        
+        <!-- Desk -->
+        <div class="desk"></div>
+        
+        <!-- Monitor with interactive HTML content -->
+        <div class="monitor">
+            <div class="monitor-stand"></div>
+            <div class="monitor-base"></div>
+            
+            <!-- This is the actual HTML content running on the monitor! -->
+            <div class="monitor-screen">
+                <div class="desktop">
+                    <div class="taskbar">
+                        <strong>3D Desktop</strong>
+                        <span style="margin-left: auto;">Live HTML!</span>
+                    </div>
+                    <div class="window">
+                        <div class="window-header">
+                            <span>Interactive App</span>
+                            <div class="window-controls">
+                                <div class="window-control close" onclick="closeWindow()"></div>
+                                <div class="window-control minimize"></div>
+                                <div class="window-control maximize"></div>
+                            </div>
+                        </div>
+                        <div class="window-content">
+                            <h3 style="margin-top: 0;">Real HTML App in 3D Room!</h3>
+                            <div class="counter" id="counter">0</div>
+                            <button onclick="increment()">+</button>
+                            <button onclick="decrement()">-</button>
+                            <br>
+                            <input type="text" placeholder="Type here..." oninput="showText(this.value)" id="textInput">
+                            <div id="output" style="margin-top: 5px; font-style: italic; font-size: 10px;"></div>
+                            <button onclick="addRandomItem()" style="margin-top: 10px;">Add Random Item</button>
+                            <div id="items" style="margin-top: 10px; font-size: 9px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <p><strong>CSS 3D Room Controls:</strong></p>
+        <p>Mouse: Rotate room</p>
+        <p>Scroll: Zoom in/out</p>
+        <p>Click on monitor to interact!</p>
+        <p style="color: #888; font-size: 12px;">Built with pure CSS 3D transforms</p>
+    </div>
+    
+    <script>
+        // Interactive HTML app logic
+        let counter = 0;
+        let items = [];
+        
+        function increment() {
+            counter++;
+            document.getElementById('counter').textContent = counter;
+        }
+        
+        function decrement() {
+            counter--;
+            document.getElementById('counter').textContent = counter;
+        }
+        
+        function showText(value) {
+            document.getElementById('output').textContent = value ? 'You typed: ' + value : '';
+        }
+        
+        function addRandomItem() {
+            const randomItems = ['📝 Document', '🎵 Music', '📸 Photo', '🎮 Game', '📊 Chart', '🔧 Tool'];
+            const item = randomItems[Math.floor(Math.random() * randomItems.length)];
+            items.push(item);
+            renderItems();
+        }
+        
+        function renderItems() {
+            const container = document.getElementById('items');
+            container.innerHTML = items.map((item, i) => 
+                `<div style="background: #f0f0f0; margin: 2px 0; padding: 2px; border-radius: 2px;">
+                    ${item} <button onclick="removeItem(${i})" style="font-size: 8px; padding: 1px 3px;">×</button>
+                </div>`
+            ).join('');
+        }
+        
+        function removeItem(index) {
+            items.splice(index, 1);
+            renderItems();
+        }
+        
+        function closeWindow() {
+            if (confirm('Close this app?')) {
+                document.querySelector('.window').style.display = 'none';
+                setTimeout(() => {
+                    document.querySelector('.window').style.display = 'flex';
+                }, 2000);
+            }
+        }
+        
+        // 3D room controls
+        const room = document.getElementById('room');
+        let mouseX = 0, mouseY = 0;
+        let rotY = 0, rotX = 0;
+        let zoom = 1;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) / window.innerWidth;
+            mouseY = (e.clientY - window.innerHeight / 2) / window.innerHeight;
+        });
+        
+        document.addEventListener('wheel', (e) => {
+            zoom += e.deltaY * -0.001;
+            zoom = Math.max(0.3, Math.min(2, zoom));
+        });
+        
+        function animate() {
+            rotY += (mouseX * 60 - rotY) * 0.05;
+            rotX += (-mouseY * 30 - rotX) * 0.05;
+            
+            room.style.transform = `
+                scale3d(${zoom}, ${zoom}, ${zoom})
+                rotateX(${rotX}deg) 
+                rotateY(${rotY}deg)
+            `;
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        // Add some initial items
+        setTimeout(() => {
+            addRandomItem();
+            addRandomItem();
+        }, 1000);
+    </script>
+</body>
+</html>

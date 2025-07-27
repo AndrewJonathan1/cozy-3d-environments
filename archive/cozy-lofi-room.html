@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cozy Lofi Room - POV</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0a0a0a;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        .ui-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .music-player {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(40,40,40,0.9);
+            padding: 20px 30px;
+            border-radius: 25px;
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .play-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(255,107,107,0.3);
+            transition: all 0.3s;
+        }
+        
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(255,107,107,0.4);
+        }
+        
+        .song-info {
+            color: white;
+            font-size: 14px;
+        }
+        
+        .song-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .song-artist {
+            opacity: 0.7;
+            font-size: 12px;
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui-overlay">
+        <h3 style="margin-top: 0; color: #ffa366;">Cozy Workspace</h3>
+        <p>Focus Mode: Active</p>
+        <p>Temperature: 72°F</p>
+        <p>Lighting: Warm</p>
+    </div>
+    
+    <div class="music-player">
+        <button class="play-btn" onclick="toggleMusic()">▶</button>
+        <div class="song-info">
+            <div class="song-title">Lofi Hip Hop Radio</div>
+            <div class="song-artist">beats to relax/study to</div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <p><strong>Controls:</strong></p>
+        <p>Mouse: Look around</p>
+        <p>WASD: Move</p>
+        <p>Scroll: Zoom</p>
+    </div>
+    
+    <script type="module">
+        import * as THREE from 'three';
+        import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
+        import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+        
+        let isPlaying = false;
+        function toggleMusic() {
+            isPlaying = !isPlaying;
+            document.querySelector('.play-btn').textContent = isPlaying ? '⏸' : '▶';
+        }
+        window.toggleMusic = toggleMusic;
+        
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x1a1a2e, 10, 50);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.5, 2); // Sitting at table, looking forward at monitor
+        
+        // WebGL renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 0.8;
+        document.body.appendChild(renderer.domElement);
+        
+        // CSS3D renderer for interactive elements
+        const css3dRenderer = new CSS3DRenderer();
+        css3dRenderer.setSize(window.innerWidth, window.innerHeight);
+        css3dRenderer.domElement.style.position = 'absolute';
+        css3dRenderer.domElement.style.top = '0';
+        css3dRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(css3dRenderer.domElement);
+        
+        // Lighting setup - warm and cozy
+        const ambientLight = new THREE.AmbientLight(0xffa366, 0.4);
+        scene.add(ambientLight);
+        
+        // Window light (soft and warm)
+        const windowLight = new THREE.DirectionalLight(0xffd700, 0.6);
+        windowLight.position.set(5, 8, 5);
+        windowLight.castShadow = true;
+        windowLight.shadow.mapSize.width = 2048;
+        windowLight.shadow.mapSize.height = 2048;
+        windowLight.shadow.camera.near = 0.5;
+        windowLight.shadow.camera.far = 50;
+        scene.add(windowLight);
+        
+        // Desk lamp light
+        const deskLight = new THREE.PointLight(0xffaa66, 0.8, 10);
+        deskLight.position.set(-1.5, 2, 0);
+        deskLight.castShadow = true;
+        scene.add(deskLight);
+        
+        // Simple setup - just table and monitor
+        const sceneGroup = new THREE.Group();
+        
+        // Monitor
+        const monitorGroup = new THREE.Group();
+        
+        // Monitor screen frame (ON THE TABLE)
+        const monitorFrameGeometry = new THREE.BoxGeometry(1.5, 1, 0.05);
+        const monitorFrameMaterial = new THREE.MeshLambertMaterial({ color: 0x222222 });
+        const monitorFrame = new THREE.Mesh(monitorFrameGeometry, monitorFrameMaterial);
+        monitorFrame.position.set(0, 1.2, -1); // On table surface, back edge
+        monitorFrame.castShadow = true;
+        monitorGroup.add(monitorFrame);
+        
+        // Monitor stand
+        const standGeometry = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+        const standMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+        const stand = new THREE.Mesh(standGeometry, standMaterial);
+        stand.position.set(0, 0.6, -1); // Base sits on table
+        stand.castShadow = true;
+        monitorGroup.add(stand);
+        
+        sceneGroup.add(monitorGroup);
+        
+        // Interactive monitor screen (CSS3D)
+        const monitorScreenElement = document.createElement('div');
+        monitorScreenElement.innerHTML = `
+            <div style="
+                width: 400px; 
+                height: 300px; 
+                background: #1e1e1e;
+                border-radius: 8px;
+                padding: 0;
+                box-sizing: border-box;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            ">
+                <div style="background: #2d2d2d; padding: 8px 12px; border-radius: 8px 8px 0 0; color: #ccc; font-size: 12px; border-bottom: 1px solid #404040;">
+                    Document.txt - Cozy Writer
+                </div>
+                
+                <textarea placeholder="Start writing your thoughts..." style="
+                    width: 100%;
+                    height: 100%;
+                    padding: 20px;
+                    background: #1e1e1e;
+                    color: #e6e6e6;
+                    border: none;
+                    border-radius: 0 0 8px 8px;
+                    font-size: 14px;
+                    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+                    line-height: 1.6;
+                    resize: none;
+                    outline: none;
+                    box-sizing: border-box;
+                " oninput="updateThoughts(this.value)"></textarea>
+            </div>
+        `;
+        monitorScreenElement.style.pointerEvents = 'auto';
+        
+        const css3dMonitor = new CSS3DObject(monitorScreenElement);
+        css3dMonitor.position.set(0, 1.2, -0.97); // Match the monitor frame exactly
+        css3dMonitor.scale.set(0.0037, 0.0037, 0.0037); // Fit the monitor size
+        scene.add(css3dMonitor);
+        
+        window.updateThoughts = function(value) {
+            console.log('User thoughts:', value);
+        };
+        
+        // Plants for coziness
+        const plantGeometry = new THREE.ConeGeometry(0.2, 0.6, 8);
+        const plantMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+        
+        // Plant 1
+        const plant1 = new THREE.Mesh(plantGeometry, plantMaterial);
+        plant1.position.set(-1.5, 1.2, -1);
+        plant1.castShadow = true;
+        roomGroup.add(plant1);
+        
+        // Plant 2
+        const plant2 = new THREE.Mesh(plantGeometry, plantMaterial);
+        plant2.position.set(3, 0.6, 2);
+        plant2.scale.set(1.5, 1.5, 1.5);
+        plant2.castShadow = true;
+        roomGroup.add(plant2);
+        
+        // Books stack
+        const bookColors = [0x8B4513, 0x654321, 0x2F4F4F];
+        bookColors.forEach((color, i) => {
+            const bookGeometry = new THREE.BoxGeometry(0.8, 0.05, 0.6);
+            const bookMaterial = new THREE.MeshLambertMaterial({ color });
+            const book = new THREE.Mesh(bookGeometry, bookMaterial);
+            book.position.set(1.5, 0.87 + (i * 0.06), -1);
+            book.castShadow = true;
+            roomGroup.add(book);
+        });
+        
+        // Coffee mug
+        const mugGeometry = new THREE.CylinderGeometry(0.08, 0.1, 0.15, 16);
+        const mugMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+        const mug = new THREE.Mesh(mugGeometry, mugMaterial);
+        mug.position.set(-0.8, 0.95, -0.5);
+        mug.castShadow = true;
+        roomGroup.add(mug);
+        
+        scene.add(roomGroup);
+        
+        // Load cozy 3D models
+        const loader = new GLTFLoader();
+        
+        // Load the wooden table
+        loader.load(
+            './objects/wooden_table_02_4k.gltf/wooden_table_02_4k.gltf',
+            function (gltf) {
+                console.log('Wooden table loaded successfully');
+                const table = gltf.scene;
+                table.position.set(0, 0, 0); // Table at ground level
+                table.scale.set(2, 2, 2); // Reasonable size
+                table.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                sceneGroup.add(table);
+            },
+            function (progress) {
+                console.log('Table loading progress:', progress);
+            },
+            function (error) {
+                console.log('Error loading table:', error);
+                console.log('Keeping the basic desk geometry as fallback');
+            }
+        );
+        
+        // Office Chair
+        const chairGeometry = new THREE.CylinderGeometry(0.4, 0.3, 1.2, 16);
+        const chairMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
+        const chair = new THREE.Mesh(chairGeometry, chairMaterial);
+        chair.position.set(0, 0.6, 0.8);
+        chair.castShadow = true;
+        roomGroup.add(chair);
+        
+        // Chair backrest
+        const backrestGeometry = new THREE.BoxGeometry(0.6, 0.8, 0.1);
+        const backrest = new THREE.Mesh(backrestGeometry, chairMaterial);
+        backrest.position.set(0, 1.0, 0.6);
+        backrest.castShadow = true;
+        roomGroup.add(backrest);
+        
+        // Bookshelf
+        const shelfGeometry = new THREE.BoxGeometry(1.5, 3, 0.3);
+        const shelfMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+        const bookshelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
+        bookshelf.position.set(-3, 1.5, -2);
+        bookshelf.castShadow = true;
+        roomGroup.add(bookshelf);
+        
+        // Lamp (ON THE TABLE)
+        const lampPoleGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.8, 8);
+        const lampPoleMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+        const lampPole = new THREE.Mesh(lampPoleGeometry, lampPoleMaterial);
+        lampPole.position.set(-0.8, 1.2, -0.6); // On table surface, to the left
+        lampPole.castShadow = true;
+        roomGroup.add(lampPole);
+        
+        // Lamp shade
+        const lampShadeGeometry = new THREE.ConeGeometry(0.2, 0.3, 16, 1, true);
+        const lampShadeMaterial = new THREE.MeshLambertMaterial({ 
+            color: 0xffe4b5,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.8
+        });
+        const lampShade = new THREE.Mesh(lampShadeGeometry, lampShadeMaterial);
+        lampShade.position.set(-0.8, 1.6, -0.6); // On top of lamp pole
+        lampShade.castShadow = true;
+        roomGroup.add(lampShade);
+        
+        // Window frame
+        const windowFrameGeometry = new THREE.BoxGeometry(2, 2.5, 0.1);
+        const windowFrameMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+        const windowFrame = new THREE.Mesh(windowFrameGeometry, windowFrameMaterial);
+        windowFrame.position.set(3, 2, -9.9);
+        roomGroup.add(windowFrame);
+        
+        // Add some scattered items for coziness
+        const items = [
+            { geo: new THREE.SphereGeometry(0.05), pos: [-0.3, 0.87, -0.8], color: 0xff6b6b }, // Red ball/apple
+            { geo: new THREE.BoxGeometry(0.15, 0.02, 0.1), pos: [-1.2, 0.87, -1.2], color: 0x8B4513 }, // Notebook
+            { geo: new THREE.CylinderGeometry(0.03, 0.03, 0.2, 8), pos: [0.8, 0.95, -0.8], color: 0x2F4F4F }, // Pen
+        ];
+        
+        items.forEach(item => {
+            const mesh = new THREE.Mesh(item.geo, new THREE.MeshLambertMaterial({ color: item.color }));
+            mesh.position.set(...item.pos);
+            mesh.castShadow = true;
+            roomGroup.add(mesh);
+        });
+        
+        // Mouse controls for looking around
+        let mouseX = 0, mouseY = 0;
+        let targetRotationY = 0, targetRotationX = 0;
+        
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - window.innerWidth / 2) / window.innerWidth;
+            mouseY = (event.clientY - window.innerHeight / 2) / window.innerHeight;
+            
+            // SUPER subtle movement for writing focus
+            targetRotationY = mouseX * Math.PI * 0.02;
+            targetRotationX = -mouseY * Math.PI * 0.01;
+        });
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Smooth camera rotation
+            camera.rotation.y += (targetRotationY - camera.rotation.y) * 0.05;
+            camera.rotation.x += (targetRotationX - camera.rotation.x) * 0.05;
+            
+            // Gentle desk lamp sway
+            deskLight.position.x = -1.5 + Math.sin(Date.now() * 0.001) * 0.1;
+            
+            renderer.render(scene, camera);
+            css3dRenderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            css3dRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        animate();
+    </script>
+</body>
+</html>
