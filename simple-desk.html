@@ -469,7 +469,19 @@
                     inset -2px -2px 5px rgba(0,0,0,0.5),
                     0 10px 20px rgba(0,0,0,0.6);
             ">
-                <textarea id="textEditor" placeholder="Start writing..." style="
+                <textarea id="textEditor" placeholder="Hey Andrew,
+
+I did a user interview and the person said Notion doesn't feel good because everything's collapsed into one place. Business, personal, personal development, his writing - all just dumped together.
+
+What if instead we had separate workspaces? This desk for focused writing. The neon room for late-night creativity. Maybe a cozy library for research.
+
+Each space holds its own context. No cognitive overload. No mixing business with personal.
+
+Different rooms for different minds.
+
+The opposite of everything-in-one-place.
+
+─ ◆ ─" style="
                     width: 100%;
                     height: 100%;
                     padding: 20px;
@@ -482,6 +494,31 @@
                     resize: none;
                     outline: none;
                     box-sizing: border-box;
+                    overflow-y: scroll;
+                    scrollbar-width: thin;
+                    scrollbar-color: #8b7355 #2a1f1a;
+                "></textarea>
+                <style>
+                    #textEditor::-webkit-scrollbar {
+                        width: 8px;
+                        -webkit-appearance: none;
+                    }
+                    #textEditor::-webkit-scrollbar-track {
+                        background: #2a1f1a;
+                        -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+                    }
+                    #textEditor::-webkit-scrollbar-thumb {
+                        background: #8b7355;
+                        border-radius: 4px;
+                        -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+                    }
+                    #textEditor::-webkit-scrollbar-thumb:hover {
+                        background: #a68660;
+                    }
+                    #textEditor {
+                        scrollbar-gutter: stable;
+                    }
+                </style>
                 "></textarea>
             </div>
         `;

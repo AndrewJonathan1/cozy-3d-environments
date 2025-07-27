@@ -193,7 +193,21 @@
                         ⚡ NEON.TERMINAL - BEDROOM_MODE ⚡
                     </div>
                     
-                    <textarea id="neonTextEditor" placeholder="// Enter your cyberpunk thoughts..." style="
+                    <textarea id="neonTextEditor" placeholder="Andrew,
+
+I'm building something that sparks joy.
+
+You know how Notion feels heavy? All your work dumped in one sterile place? This is the opposite.
+
+Imagine customizable rooms for thinking. Windows that float. Notes that stick to walls. Your capture app living inside a space you actually want to be in.
+
+The 3D web is wild - we can build entire worlds for creativity. Thank you for inspiring me to play and explore. 
+
+Holy shit, I can actually do this.
+
+Excited to see what we build together.
+
+─ ◆ ─" style="
                         width: 100%;
                         height: 100%;
                         padding: 25px;
@@ -208,6 +222,31 @@
                         box-sizing: border-box;
                         border-radius: 0 0 9px 9px;
                         text-shadow: 0 0 5px #00ff88;
+                        overflow-y: scroll;
+                        scrollbar-width: thin;
+                        scrollbar-color: #00ffff #1a0a1a;
+                    "></textarea>
+                    <style>
+                        #neonTextEditor::-webkit-scrollbar {
+                            width: 8px;
+                            -webkit-appearance: none;
+                        }
+                        #neonTextEditor::-webkit-scrollbar-track {
+                            background: #1a0a1a;
+                            -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+                        }
+                        #neonTextEditor::-webkit-scrollbar-thumb {
+                            background: #00ffff;
+                            border-radius: 4px;
+                            -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+                        }
+                        #neonTextEditor::-webkit-scrollbar-thumb:hover {
+                            background: #00cccc;
+                        }
+                        #neonTextEditor {
+                            scrollbar-gutter: stable;
+                        }
+                    </style>
                     "></textarea>
                 </div>
             `;
@@ -278,6 +317,9 @@
                                 0 0 15px rgba(0,255,255,0.4);
                             transition: all 0.1s ease;
                             text-shadow: 0 0 10px #00ffff;
+                            pointer-events: auto;
+                            z-index: 1000;
+                            position: relative;
                         ">⏸</button>
                         <div style="flex: 1;">
                             <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px; text-shadow: 0 0 8px #00ffff;">SYNTHWAVE DREAMS</div>
@@ -305,25 +347,33 @@
             audio.volume = 0.25;
             let isPlaying = true;
             
+            // Start playing automatically
+            audio.play().then(() => {
+                console.log('Neon bedroom music started');
+            }).catch(e => {
+                console.log('Auto-play blocked, click play button');
+                isPlaying = false;
+            });
+            
+            // Wait for DOM to be ready, then setup controls
             setTimeout(() => {
                 const playPauseBtn = document.getElementById('neonPlayPauseBtn');
                 const progressBar = document.getElementById('neonProgressBar');
                 
-                audio.play().then(() => {
-                    console.log('Neon bedroom music started');
-                }).catch(e => {
-                    console.log('Auto-play blocked, click play button');
-                    isPlaying = false;
-                    if (playPauseBtn) playPauseBtn.textContent = '▶';
-                });
+                if (!isPlaying && playPauseBtn) {
+                    playPauseBtn.textContent = '▶';
+                }
                 
                 if (playPauseBtn) {
-                    playPauseBtn.addEventListener('click', () => {
+                    console.log('Setting up neon play/pause button');
+                    playPauseBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        console.log('Neon play/pause clicked, isPlaying:', isPlaying);
                         if (isPlaying) {
                             audio.pause();
                             playPauseBtn.textContent = '▶';
                         } else {
-                            audio.play();
+                            audio.play().catch(err => console.log('Play error:', err));
                             playPauseBtn.textContent = '⏸';
                         }
                         isPlaying = !isPlaying;
@@ -336,7 +386,7 @@
                         progressBar.style.width = progress + '%';
                     }
                 }, 100);
-            }, 100);
+            }, 500);
         }
         
         // Animation loop

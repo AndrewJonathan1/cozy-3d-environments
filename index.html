@@ -1,39 +1,190 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Cozy Workspaces</title>
+    <meta charset="UTF-8">
+    <title>Writing Environments // Lab</title>
     <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(1deg); }
+        }
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 5px #4a9eff; }
+            50% { text-shadow: 0 0 20px #4a9eff, 0 0 30px #4a9eff; }
+        }
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+        
         body { 
             margin: 0; 
             padding: 40px; 
-            background: #1a1a1a; 
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a, #0a0a1a); 
             color: #fff; 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             justify-content: center; 
             min-height: 100vh; 
+            overflow: hidden;
+            position: relative;
         }
-        a { 
-            display: block; 
-            color: #4a9eff; 
+        
+        .stars {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+                        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                        radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                        radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: float 20s infinite linear;
+            opacity: 0.3;
+        }
+        
+        .container {
+            z-index: 10;
+            text-align: center;
+            max-width: 800px;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #4a9eff, #00ffff, #ff00ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 3s ease-in-out infinite;
+            font-weight: 900;
+            letter-spacing: -2px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 3rem;
+            font-family: 'Courier New', monospace;
+            border-right: 2px solid #4a9eff;
+            overflow: hidden;
+            white-space: nowrap;
+            width: 0;
+            animation: typewriter 2s steps(40) forwards;
+            animation-delay: 0.5s;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #ccc;
+            margin-bottom: 3rem;
+            max-width: 600px;
+            opacity: 0;
+            animation: fadeIn 1s ease-in forwards;
+            animation-delay: 2.5s;
+        }
+        
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        .environments {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .environment { 
+            position: relative;
+            color: #fff;
             text-decoration: none; 
-            font-size: 24px; 
-            margin: 20px 0; 
-            padding: 20px 40px; 
-            border: 1px solid #333; 
-            border-radius: 8px; 
-            transition: all 0.3s ease; 
+            font-size: 1.3rem; 
+            padding: 2rem 3rem; 
+            border: 2px solid transparent;
+            border-radius: 15px; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            background: linear-gradient(135deg, rgba(74,158,255,0.1), rgba(255,0,255,0.1));
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+            text-align: center;
+            animation: float 6s ease-in-out infinite;
         }
-        a:hover { 
-            background: #333; 
-            border-color: #4a9eff; 
+        
+        .environment:nth-child(2) { animation-delay: -3s; }
+        
+        .environment:hover { 
+            background: linear-gradient(135deg, rgba(74,158,255,0.3), rgba(255,0,255,0.3));
+            border-color: #4a9eff;
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(74,158,255,0.3);
+        }
+        
+        .environment::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, #4a9eff, #00ffff, #ff00ff, #4a9eff);
+            border-radius: 15px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        
+        .environment:hover::before {
+            opacity: 1;
+        }
+        
+        .env-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .env-desc {
+            font-size: 0.9rem;
+            color: #aaa;
+            font-style: italic;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 2rem;
+            font-size: 0.9rem;
+            color: #666;
+            font-family: 'Courier New', monospace;
         }
     </style>
 </head>
 <body>
-    <a href="bedroom.html">Neon Bedroom</a>
-    <a href="simple-desk.html">Simple Desk</a>
+    <div class="stars"></div>
+    <div class="container">
+        <h1>WRITING.ENVIRONMENTS</h1>
+        <div class="subtitle">// experimental playground for thought</div>
+        
+        <div class="description">
+            What if writing wasn't just a blank page?<br>
+            What if your environment shaped your creativity?<br>
+            <em>Step into spaces designed for deep work.</em>
+        </div>
+        
+        <div class="environments">
+            <a href="bedroom.html" class="environment">
+                <span class="env-label">⚡ NEON BEDROOM</span>
+                <span class="env-desc">cyberpunk vibes // late night energy</span>
+            </a>
+            <a href="simple-desk.html" class="environment">
+                <span class="env-label">🪵 WOODEN DESK</span>
+                <span class="env-desc">warm focus // natural calm</span>
+            </a>
+        </div>
+    </div>
+    
+    <div class="footer">
+        > experiment in progress... more environments coming soon
+    </div>
 </body>
 </html>
