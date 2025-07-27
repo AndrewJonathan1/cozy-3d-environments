@@ -37,9 +37,10 @@
         starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
         const starMaterial = new THREE.PointsMaterial({ 
             color: 0xffffff, 
-            size: Math.random() * 2 + 0.5,
+            size: 0.5,
             transparent: true,
-            opacity: 0.8
+            opacity: 1.0,
+            sizeAttenuation: false // Keep stars same size regardless of distance
         });
         const stars = new THREE.Points(starGeometry, starMaterial);
         scene.add(stars);
@@ -75,19 +76,20 @@
         css3dRenderer.domElement.style.pointerEvents = 'none';
         document.body.appendChild(css3dRenderer.domElement);
         
-        // Warm cozy lighting
-        const ambientLight = new THREE.AmbientLight(0xffa366, 0.7); // Warm orange ambient
+        // Space lighting - cool and minimal
+        const ambientLight = new THREE.AmbientLight(0x404080, 0.3); // Cool blue ambient
         scene.add(ambientLight);
         
-        const directionalLight = new THREE.DirectionalLight(0xffcc99, 0.6); // Soft warm directional
-        directionalLight.position.set(5, 8, 5);
+        const directionalLight = new THREE.DirectionalLight(0x8080ff, 0.5); // Cool directional light from stars
+        directionalLight.position.set(10, 10, 5);
         directionalLight.castShadow = true;
         scene.add(directionalLight);
         
-        // Additional warm point light for cozy atmosphere
-        const warmPointLight = new THREE.PointLight(0xffaa66, 0.8, 10);
-        warmPointLight.position.set(-2, 2, 1); // From the left side
-        scene.add(warmPointLight);
+        // Desk work light - warm contrast in the cold space
+        const deskLight = new THREE.PointLight(0xffaa66, 1.2, 5);
+        deskLight.position.set(0, 2, 0); // Above the desk
+        deskLight.castShadow = true;
+        scene.add(deskLight);
         
         // Load wooden table
         const loader = new GLTFLoader();
@@ -135,53 +137,7 @@
         mug.castShadow = true;
         scene.add(mug);
         
-        // Small plant
-        const plantPotGeometry = new THREE.CylinderGeometry(0.06, 0.08, 0.08, 16);
-        const plantPotMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-        const plantPot = new THREE.Mesh(plantPotGeometry, plantPotMaterial);
-        plantPot.position.set(0.6, 0.89, -0.3);
-        plantPot.castShadow = true;
-        scene.add(plantPot);
         
-        const plantGeometry = new THREE.ConeGeometry(0.05, 0.15, 8);
-        const plantMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
-        const plant = new THREE.Mesh(plantGeometry, plantMaterial);
-        plant.position.set(0.6, 1.0, -0.3);
-        plant.castShadow = true;
-        scene.add(plant);
-        
-        // Desk lamp
-        const lampBaseGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.03, 16);
-        const lampBaseMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
-        const lampBase = new THREE.Mesh(lampBaseGeometry, lampBaseMaterial);
-        lampBase.position.set(-0.8, 0.87, -0.6);
-        lampBase.castShadow = true;
-        scene.add(lampBase);
-        
-        const lampArmGeometry = new THREE.CylinderGeometry(0.01, 0.01, 0.4, 8);
-        const lampArmMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
-        const lampArm = new THREE.Mesh(lampArmGeometry, lampArmMaterial);
-        lampArm.position.set(-0.8, 1.07, -0.6);
-        lampArm.rotation.z = Math.PI / 6; // Angled
-        lampArm.castShadow = true;
-        scene.add(lampArm);
-        
-        const lampShadeGeometry = new THREE.ConeGeometry(0.12, 0.15, 16);
-        const lampShadeMaterial = new THREE.MeshLambertMaterial({ 
-            color: 0xffe4b5,
-            transparent: true,
-            opacity: 0.9
-        });
-        const lampShade = new THREE.Mesh(lampShadeGeometry, lampShadeMaterial);
-        lampShade.position.set(-0.65, 1.25, -0.6);
-        lampShade.castShadow = true;
-        scene.add(lampShade);
-        
-        // Lamp light
-        const lampLight = new THREE.PointLight(0xffaa66, 0.6, 3);
-        lampLight.position.set(-0.65, 1.2, -0.6);
-        lampLight.castShadow = true;
-        scene.add(lampLight);
         
         // Books stack
         const bookColors = [0x8B4513, 0x654321, 0x2F4F4F];
@@ -206,262 +162,31 @@
         
         // COZY BEDROOM ENVIRONMENT
         
-        // Moon surface floor
-        const floorGeometry = new THREE.PlaneGeometry(20, 20);
+        // Moon surface floor - larger and positioned to fill front view
+        const floorGeometry = new THREE.PlaneGeometry(50, 50);
         const textureLoader = new THREE.TextureLoader();
         const moonTexture = textureLoader.load('./objects/moon.png');
         moonTexture.wrapS = THREE.RepeatWrapping;
         moonTexture.wrapT = THREE.RepeatWrapping;
-        moonTexture.repeat.set(2, 2);
+        moonTexture.repeat.set(4, 4);
         
         const floorMaterial = new THREE.MeshLambertMaterial({ 
             map: moonTexture,
             transparent: false,
-            color: 0xcccccc // Slight gray tint
+            color: 0xeeeeee // Much brighter
         });
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
         floor.rotation.x = -Math.PI / 2;
-        floor.position.y = 0;
+        floor.position.set(0, 0, 0);
         floor.receiveShadow = true;
         scene.add(floor);
         
-        // Bed in the background
-        const bedFrameGeometry = new THREE.BoxGeometry(2.5, 0.8, 1.8);
-        const bedFrameMaterial = new THREE.MeshLambertMaterial({ color: 0x654321 });
-        const bedFrame = new THREE.Mesh(bedFrameGeometry, bedFrameMaterial);
-        bedFrame.position.set(-3, 0.4, -3);
-        bedFrame.castShadow = true;
-        scene.add(bedFrame);
         
-        const mattressGeometry = new THREE.BoxGeometry(2.3, 0.3, 1.6);
-        const mattressMaterial = new THREE.MeshLambertMaterial({ color: 0xF5F5DC });
-        const mattress = new THREE.Mesh(mattressGeometry, mattressMaterial);
-        mattress.position.set(-3, 0.95, -3);
-        mattress.castShadow = true;
-        scene.add(mattress);
         
-        // Pillows
-        const pillowGeometry = new THREE.BoxGeometry(0.4, 0.15, 0.6);
-        const pillowMaterial1 = new THREE.MeshLambertMaterial({ color: 0xDEB887 });
-        const pillowMaterial2 = new THREE.MeshLambertMaterial({ color: 0xCD853F });
         
-        const pillow1 = new THREE.Mesh(pillowGeometry, pillowMaterial1);
-        pillow1.position.set(-3.5, 1.1, -3.5);
-        pillow1.castShadow = true;
-        scene.add(pillow1);
         
-        const pillow2 = new THREE.Mesh(pillowGeometry, pillowMaterial2);
-        pillow2.position.set(-2.5, 1.1, -3.5);
-        pillow2.castShadow = true;
-        scene.add(pillow2);
         
-        // Nightstand
-        const nightstandGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.4);
-        const nightstandMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-        const nightstand = new THREE.Mesh(nightstandGeometry, nightstandMaterial);
-        nightstand.position.set(-4.5, 0.3, -3);
-        nightstand.castShadow = true;
-        scene.add(nightstand);
         
-        // Bedside lamp
-        const bedsideLampBase = new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8);
-        const bedsideLampBaseMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
-        const bedsideLampMesh = new THREE.Mesh(bedsideLampBase, bedsideLampBaseMaterial);
-        bedsideLampMesh.position.set(-4.5, 0.75, -3);
-        bedsideLampMesh.castShadow = true;
-        scene.add(bedsideLampMesh);
-        
-        const bedsideLampShade = new THREE.ConeGeometry(0.15, 0.2, 16);
-        const bedsideLampShadeMaterial = new THREE.MeshLambertMaterial({ 
-            color: 0xffe4b5,
-            transparent: true,
-            opacity: 0.9
-        });
-        const bedsideLampShadeMesh = new THREE.Mesh(bedsideLampShade, bedsideLampShadeMaterial);
-        bedsideLampShadeMesh.position.set(-4.5, 1.0, -3);
-        bedsideLampShadeMesh.castShadow = true;
-        scene.add(bedsideLampShadeMesh);
-        
-        // Bedside lamp light
-        const bedsideLight = new THREE.PointLight(0xffaa66, 0.4, 4);
-        bedsideLight.position.set(-4.5, 0.95, -3);
-        bedsideLight.castShadow = true;
-        scene.add(bedsideLight);
-        
-        // Multiple plants for coziness
-        // Large floor plant
-        const largePlantPotGeometry = new THREE.CylinderGeometry(0.15, 0.18, 0.15, 16);
-        const largePlantPotMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-        const largePlantPot = new THREE.Mesh(largePlantPotGeometry, largePlantPotMaterial);
-        largePlantPot.position.set(2, 0.075, -2);
-        largePlantPot.castShadow = true;
-        scene.add(largePlantPot);
-        
-        // Large plant leaves
-        for (let i = 0; i < 8; i++) {
-            const leafGeometry = new THREE.ConeGeometry(0.08, 0.4, 8);
-            const leafMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
-            const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
-            const angle = (i / 8) * Math.PI * 2;
-            leaf.position.set(
-                2 + Math.cos(angle) * 0.1,
-                0.35 + Math.random() * 0.2,
-                -2 + Math.sin(angle) * 0.1
-            );
-            leaf.rotation.x = Math.random() * 0.5;
-            leaf.rotation.z = angle;
-            leaf.castShadow = true;
-            scene.add(leaf);
-        }
-        
-        // Hanging plant
-        const hangingPlantPotGeometry = new THREE.CylinderGeometry(0.08, 0.1, 0.1, 16);
-        const hangingPlantPot = new THREE.Mesh(hangingPlantPotGeometry, largePlantPotMaterial);
-        hangingPlantPot.position.set(1, 2.2, -1);
-        hangingPlantPot.castShadow = true;
-        scene.add(hangingPlantPot);
-        
-        // Hanging plant trailing vines
-        for (let i = 0; i < 6; i++) {
-            const vineGeometry = new THREE.CylinderGeometry(0.01, 0.01, 0.8, 8);
-            const vineMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
-            const vine = new THREE.Mesh(vineGeometry, vineMaterial);
-            const angle = (i / 6) * Math.PI * 2;
-            vine.position.set(
-                1 + Math.cos(angle) * 0.05,
-                1.8 - Math.random() * 0.3,
-                -1 + Math.sin(angle) * 0.05
-            );
-            vine.rotation.x = Math.random() * 0.3;
-            vine.castShadow = true;
-            scene.add(vine);
-        }
-        
-        // Window plants on shelf
-        const windowPlantPositions = [
-            { x: 3, z: -4 },
-            { x: 3.5, z: -4 },
-            { x: 4, z: -4 }
-        ];
-        
-        windowPlantPositions.forEach((pos, index) => {
-            const smallPotGeometry = new THREE.CylinderGeometry(0.04, 0.05, 0.06, 16);
-            const smallPot = new THREE.Mesh(smallPotGeometry, largePlantPotMaterial);
-            smallPot.position.set(pos.x, 1.5, pos.z);
-            smallPot.castShadow = true;
-            scene.add(smallPot);
-            
-            const smallPlantGeometry = new THREE.SphereGeometry(0.06, 8, 8);
-            const smallPlantMaterial = new THREE.MeshLambertMaterial({ color: 0x32CD32 });
-            const smallPlant = new THREE.Mesh(smallPlantGeometry, smallPlantMaterial);
-            smallPlant.position.set(pos.x, 1.58, pos.z);
-            smallPlant.castShadow = true;
-            scene.add(smallPlant);
-        });
-        
-        // Bookshelf
-        const bookshelfGeometry = new THREE.BoxGeometry(0.3, 2, 1.5);
-        const bookshelfMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-        const bookshelf = new THREE.Mesh(bookshelfGeometry, bookshelfMaterial);
-        bookshelf.position.set(3.8, 1, -4);
-        bookshelf.castShadow = true;
-        scene.add(bookshelf);
-        
-        // Books on shelf
-        const bookPositions = [
-            { x: 3.7, y: 0.5, z: -4.5 },
-            { x: 3.7, y: 0.5, z: -4.2 },
-            { x: 3.7, y: 0.5, z: -3.9 },
-            { x: 3.7, y: 0.8, z: -4.4 },
-            { x: 3.7, y: 0.8, z: -4.1 },
-            { x: 3.7, y: 1.1, z: -4.3 }
-        ];
-        
-        const bookMaterials = [
-            new THREE.MeshLambertMaterial({ color: 0x8B4513 }),
-            new THREE.MeshLambertMaterial({ color: 0x654321 }),
-            new THREE.MeshLambertMaterial({ color: 0x2F4F4F }),
-            new THREE.MeshLambertMaterial({ color: 0x800000 }),
-            new THREE.MeshLambertMaterial({ color: 0x556B2F })
-        ];
-        
-        bookPositions.forEach((pos, index) => {
-            const bookGeometry = new THREE.BoxGeometry(0.08, 0.15, 0.02);
-            const book = new THREE.Mesh(bookGeometry, bookMaterials[index % bookMaterials.length]);
-            book.position.set(pos.x, pos.y, pos.z);
-            book.rotation.y = Math.random() * 0.2 - 0.1;
-            book.castShadow = true;
-            scene.add(book);
-        });
-        
-        // Fairy lights around the room
-        for (let i = 0; i < 20; i++) {
-            const lightBulbGeometry = new THREE.SphereGeometry(0.02, 8, 8);
-            const lightBulbMaterial = new THREE.MeshBasicMaterial({ 
-                color: 0xffff99,
-                transparent: true,
-                opacity: 0.8
-            });
-            const lightBulb = new THREE.Mesh(lightBulbGeometry, lightBulbMaterial);
-            
-            const angle = (i / 20) * Math.PI * 2;
-            const radius = 4;
-            lightBulb.position.set(
-                Math.cos(angle) * radius,
-                2.3 + Math.sin(i * 0.5) * 0.1,
-                Math.sin(angle) * radius
-            );
-            scene.add(lightBulb);
-            
-            // Add small point lights for fairy lights
-            const fairyLight = new THREE.PointLight(0xffff99, 0.1, 1);
-            fairyLight.position.copy(lightBulb.position);
-            scene.add(fairyLight);
-        }
-        
-        // Dresser
-        const dresserGeometry = new THREE.BoxGeometry(1.2, 0.8, 0.5);
-        const dresserMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-        const dresser = new THREE.Mesh(dresserGeometry, dresserMaterial);
-        dresser.position.set(-1, 0.4, -4.5);
-        dresser.castShadow = true;
-        scene.add(dresser);
-        
-        // Mirror on dresser
-        const mirrorGeometry = new THREE.PlaneGeometry(0.8, 1);
-        const mirrorMaterial = new THREE.MeshBasicMaterial({ 
-            color: 0x888888,
-            transparent: true,
-            opacity: 0.8
-        });
-        const mirror = new THREE.Mesh(mirrorGeometry, mirrorMaterial);
-        mirror.position.set(-1, 1.2, -4.25);
-        scene.add(mirror);
-        
-        // Candles on dresser
-        const candlePositions = [
-            { x: -1.4, z: -4.2 },
-            { x: -0.6, z: -4.2 }
-        ];
-        
-        candlePositions.forEach(pos => {
-            const candleGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.1, 8);
-            const candleMaterial = new THREE.MeshLambertMaterial({ color: 0xFFF8DC });
-            const candle = new THREE.Mesh(candleGeometry, candleMaterial);
-            candle.position.set(pos.x, 0.85, pos.z);
-            candle.castShadow = true;
-            scene.add(candle);
-            
-            // Candle flame light
-            const candleLight = new THREE.PointLight(0xffaa00, 0.3, 2);
-            candleLight.position.set(pos.x, 0.9, pos.z);
-            scene.add(candleLight);
-        });
-        
-        // Additional ambient lighting for cozy effect
-        const ceilingLight = new THREE.PointLight(0xffd4a3, 0.3, 15);
-        ceilingLight.position.set(0, 3, 0);
-        scene.add(ceilingLight);
         
         // HTML text editor on monitor
         const textEditorElement = document.createElement('div');
@@ -675,6 +400,10 @@ The opposite of everything-in-one-place.
             
             // Smooth camera look-at based on mouse
             camera.lookAt(targetLookX, targetLookY, -0.5);
+            
+            // Animate stars - very gentle rotation
+            stars.rotation.x += 0.00005;
+            stars.rotation.y += 0.00003;
             
             renderer.render(scene, camera);
             css3dRenderer.render(scene, camera);
