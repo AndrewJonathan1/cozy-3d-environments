@@ -273,6 +273,9 @@ Excited to see what we build together.
                     textEditor.addEventListener('input', () => {
                         localStorage.setItem('neonBedroomThoughts', textEditor.value);
                     });
+                    
+                    // Auto-focus the text editor
+                    textEditor.focus();
                 }
             }, 100);
             
