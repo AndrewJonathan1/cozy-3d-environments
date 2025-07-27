@@ -552,19 +552,7 @@
                         "></div>
                     </div>
                     
-                    <textarea id="neonTextEditor" placeholder="Andrew,
-
-I had a lot of fun building this and excited to share with you.
-
-You know how Notion feels heavy? All your work dumped in one sterile place? This is the opposite.
-
-Imagine customizable rooms for thinking. Notes that stick to walls. Radios that work.
-
-The 3D web is wild - we can build entire worlds for focus creativity. Thank you for inspiring me to play and explore. 
-
-Excited to play with you!
-
-─ ◆ ─" style="
+                    <textarea id="neonTextEditor" style="
                         width: 100%;
                         height: 100%;
                         padding: 25px;
@@ -804,8 +792,20 @@ Excited to play with you!
                     if (savedText) {
                         textEditor.value = savedText;
                     } else {
-                        // Set the placeholder content as actual text for auto-scroll
-                        textEditor.value = textEditor.placeholder;
+                        // Set default content as actual text for auto-scroll
+                        textEditor.value = `Andrew,
+
+I had a lot of fun building this and excited to share with you.
+
+You know how Notion feels heavy? All your work dumped in one sterile place? This is the opposite.
+
+Imagine customizable rooms for thinking. Notes that stick to walls. Radios that work.
+
+The 3D web is wild - we can build entire worlds for focus creativity. Thank you for inspiring me to play and explore. 
+
+Excited to play with you!
+
+─ ◆ ─`;
                     }
                     
                     textEditor.addEventListener('input', () => {
