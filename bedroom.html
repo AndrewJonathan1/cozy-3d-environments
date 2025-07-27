@@ -85,7 +85,16 @@
         
         // Camera positioned INSIDE bedroom - sitting on bed looking at wall-mounted monitor
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 0.3, 0.5); // Much lower - actually sitting on bed
+        
+        // Load saved camera position from localStorage
+        const savedCameraState = localStorage.getItem('neonCameraState');
+        if (savedCameraState) {
+            const cameraState = JSON.parse(savedCameraState);
+            camera.position.set(cameraState.x || 0, cameraState.y || 0.3, cameraState.z || 0.5);
+            camera.rotation.set(cameraState.rotX || 0, cameraState.rotY || 0, cameraState.rotZ || 0);
+        } else {
+            camera.position.set(0, 0.3, 0.5); // Default position
+        }
         
         // Player movement variables
         let moveSpeed = 0.017; // 2/3 slower (0.05 * 0.33)
@@ -134,6 +143,9 @@
         });
         
         document.addEventListener('mouseup', () => {
+            if (isDraggingCamera) {
+                saveCameraState(); // Save camera state after rotating
+            }
             isDraggingCamera = false;
             document.body.style.cursor = 'default';
         });
@@ -164,28 +176,59 @@
             }
         });
         
+        // Save camera state to localStorage
+        function saveCameraState() {
+            const cameraState = {
+                x: camera.position.x,
+                y: camera.position.y,
+                z: camera.position.z,
+                rotX: camera.rotation.x,
+                rotY: camera.rotation.y,
+                rotZ: camera.rotation.z
+            };
+            localStorage.setItem('neonCameraState', JSON.stringify(cameraState));
+        }
+        
+        // Throttled save function to avoid saving too frequently
+        let saveTimeout;
+        function throttledSaveCameraState() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveCameraState, 500); // Save 500ms after movement stops
+        }
+        
         // Player movement function
         function updatePlayerMovement() {
+            let moved = false;
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
             
             if (keys['KeyW'] || keys['ArrowUp']) {
                 camera.position.add(forward.multiplyScalar(moveSpeed));
+                moved = true;
             }
             if (keys['KeyS'] || keys['ArrowDown']) {
                 camera.position.add(forward.multiplyScalar(-moveSpeed));
+                moved = true;
             }
             if (keys['KeyA'] || keys['ArrowLeft']) {
                 camera.position.add(right.multiplyScalar(-moveSpeed));
+                moved = true;
             }
             if (keys['KeyD'] || keys['ArrowRight']) {
                 camera.position.add(right.multiplyScalar(moveSpeed));
+                moved = true;
             }
             if (keys['Space']) {
                 camera.position.y += moveSpeed;
+                moved = true;
             }
             if (keys['ShiftLeft'] || keys['ShiftRight']) {
                 camera.position.y -= moveSpeed;
+                moved = true;
+            }
+            
+            if (moved) {
+                throttledSaveCameraState();
             }
         }
         
@@ -380,7 +423,7 @@
                             Click play/pause button
                         </div>
                         <div style="text-align: center;">
-                            <button id="resetCameraBtn" style="
+                            <button id="resetAllBtn" style="
                                 background: linear-gradient(145deg, #ff00ff, #8000ff);
                                 border: 2px solid #00ffff;
                                 color: #00ffff;
@@ -394,7 +437,7 @@
                                 transition: all 0.2s ease;
                             " onmouseover="this.style.boxShadow='0 0 15px rgba(0,255,255,0.5)'" 
                                onmouseout="this.style.boxShadow='0 0 10px rgba(255,0,255,0.3)'">
-                                🎯 RESET CAMERA
+                                🔄 RESET ALL
                             </button>
                         </div>
                     </div>
@@ -421,20 +464,37 @@
                 isMinimized = !isMinimized;
             });
             
-            // Reset camera functionality
-            const resetCameraBtn = document.getElementById('resetCameraBtn');
-            if (resetCameraBtn) {
-                resetCameraBtn.addEventListener('click', () => {
+            // Reset all functionality
+            const resetAllBtn = document.getElementById('resetAllBtn');
+            if (resetAllBtn) {
+                resetAllBtn.addEventListener('click', () => {
                     // Reset camera position and rotation
                     camera.position.set(0, 0.3, 0.5);
                     camera.rotation.set(0, 0, 0);
                     targetLookX = 0;
                     targetLookY = 0.5;
                     
-                    // Flash effect
-                    resetCameraBtn.style.background = 'linear-gradient(145deg, #00ffff, #ffffff)';
+                    // Reset editor position and size
+                    if (css3dMonitor) {
+                        css3dMonitor.position.set(0, 0.5, -1.9);
+                    }
+                    
+                    // Reset editor container size
                     setTimeout(() => {
-                        resetCameraBtn.style.background = 'linear-gradient(145deg, #ff00ff, #8000ff)';
+                        const container = document.getElementById('textEditorContainer');
+                        if (container) {
+                            container.style.width = '600px';
+                            container.style.height = '400px';
+                        }
+                        // Clear all saved states
+                        localStorage.removeItem('neonEditorState');
+                        localStorage.removeItem('neonCameraState');
+                    }, 100);
+                    
+                    // Flash effect
+                    resetAllBtn.style.background = 'linear-gradient(145deg, #00ffff, #ffffff)';
+                    setTimeout(() => {
+                        resetAllBtn.style.background = 'linear-gradient(145deg, #ff00ff, #8000ff)';
                     }, 150);
                 });
             }
@@ -594,7 +654,25 @@ Excited to play with you!
             
             const css3dMonitor = new CSS3DObject(monitorScreenElement);
             // Position monitor on wall at proper eye level from bed
-            css3dMonitor.position.set(0, 0.5, -1.9);
+            // Load saved position and size from localStorage
+            const savedEditorState = localStorage.getItem('neonEditorState');
+            if (savedEditorState) {
+                const state = JSON.parse(savedEditorState);
+                css3dMonitor.position.set(state.x || 0, state.y || 0.5, state.z || -1.9);
+                if (state.width && state.height) {
+                    // Apply saved size to container
+                    setTimeout(() => {
+                        const container = document.getElementById('textEditorContainer');
+                        if (container) {
+                            container.style.width = state.width + 'px';
+                            container.style.height = state.height + 'px';
+                        }
+                    }, 100);
+                }
+            } else {
+                css3dMonitor.position.set(0, 0.5, -1.9);
+            }
+            
             css3dMonitor.rotation.x = 0;
             css3dMonitor.rotation.y = 0;
             css3dMonitor.rotation.z = 0;
@@ -646,6 +724,18 @@ Excited to play with you!
                         });
                     });
                     
+                    // Save editor state to localStorage
+                    function saveEditorState() {
+                        const state = {
+                            x: css3dMonitor.position.x,
+                            y: css3dMonitor.position.y,
+                            z: css3dMonitor.position.z,
+                            width: container.offsetWidth,
+                            height: container.offsetHeight
+                        };
+                        localStorage.setItem('neonEditorState', JSON.stringify(state));
+                    }
+                    
                     // Mouse move handler
                     document.addEventListener('mousemove', (e) => {
                         if (isDragging) {
@@ -681,6 +771,9 @@ Excited to play with you!
                     
                     // Mouse up handler
                     document.addEventListener('mouseup', () => {
+                        if (isDragging || isResizing) {
+                            saveEditorState(); // Save state when done dragging/resizing
+                        }
                         isDragging = false;
                         isResizing = false;
                         currentHandle = null;
