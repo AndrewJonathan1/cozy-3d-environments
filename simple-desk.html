@@ -108,12 +108,17 @@
         camera.position.set(0, 2.5, 4.0); // Much higher and farther back for better overview
         
         // Player movement variables
-        let moveSpeed = 0.1;
+        let moveSpeed = 0.033; // 2/3 slower (0.1 * 0.33)
         let keys = {};
         let targetLookX = 0, targetLookY = 1.1;
+        let isMouseInTextArea = false;
+        let isDraggingCamera = false;
+        let lastMouseX = 0, lastMouseY = 0;
         
         // Keyboard controls
         document.addEventListener('keydown', (event) => {
+            // Don't capture keys when typing in text areas
+            if (isMouseInTextArea || document.activeElement.tagName === 'TEXTAREA') return;
             keys[event.code] = true;
         });
         
@@ -131,6 +136,52 @@
             // Convert mouse movement to look targets (MUCH MORE NARROW)
             targetLookX = mouseX * 0.3; // Very subtle left/right panning
             targetLookY = 1.1 + (mouseY * -0.1); // Very subtle up/down with bias toward desk
+        });
+        
+        // Camera drag controls
+        document.addEventListener('mousedown', (event) => {
+            if (isMouseInTextArea) return;
+            // Don't drag camera if clicking on help panel or other UI elements
+            if (event.target.closest('#helpPanel') || 
+                event.target.closest('#textEditorContainer') ||
+                event.target.closest('.resize-handle') ||
+                event.target.closest('.music-player')) return;
+                
+            isDraggingCamera = true;
+            lastMouseX = event.clientX;
+            lastMouseY = event.clientY;
+            document.body.style.cursor = 'grabbing';
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDraggingCamera = false;
+            document.body.style.cursor = 'default';
+        });
+        
+        document.addEventListener('mousemove', (event) => {
+            if (isDraggingCamera && !isMouseInTextArea) {
+                const deltaX = event.clientX - lastMouseX;
+                const deltaY = event.clientY - lastMouseY;
+                
+                // Rotate camera based on mouse movement (2/3 slower)
+                camera.rotation.y -= deltaX * 0.00167; // 0.005 * 0.33
+                camera.rotation.x -= deltaY * 0.00167;
+                
+                // Clamp vertical rotation
+                camera.rotation.x = Math.max(-Math.PI/3, Math.min(Math.PI/3, camera.rotation.x));
+                
+                lastMouseX = event.clientX;
+                lastMouseY = event.clientY;
+            } else {
+                // Original mouse look behavior when not dragging
+                mouseX = (event.clientX - window.innerWidth / 2) / window.innerWidth;
+                mouseY = (event.clientY - window.innerHeight / 2) / window.innerHeight;
+                
+                if (!isDraggingCamera) {
+                    targetLookX = mouseX * 0.3;
+                    targetLookY = 1.1 + (mouseY * -0.1);
+                }
+            }
         });
         
         // Player movement function
@@ -232,17 +283,34 @@
                             W/A/S/D or Arrow Keys - Move<br>
                             Space - Float up<br>
                             Shift - Float down<br>
-                            Mouse - Look around
+                            Click + Drag - Look around
                         </div>
                         <div style="margin-bottom: 12px;">
                             <strong style="color: #d4a574;">EDITOR:</strong><br>
-                            Drag frame - Move editor<br>
+                            Drag title bar - Move editor<br>
                             Resize handles - Scale editor<br>
                             Auto-saves your text
                         </div>
-                        <div>
+                        <div style="margin-bottom: 12px;">
                             <strong style="color: #d4a574;">MUSIC:</strong><br>
                             Click play/pause button
+                        </div>
+                        <div style="text-align: center;">
+                            <button id="resetCameraBtn" style="
+                                background: linear-gradient(145deg, #d4a574, #a67c52);
+                                border: 2px solid #8b7355;
+                                color: #2a1f1a;
+                                padding: 8px 16px;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 11px;
+                                font-weight: bold;
+                                box-shadow: 0 0 10px rgba(212,165,116,0.3);
+                                transition: all 0.2s ease;
+                            " onmouseover="this.style.boxShadow='0 0 15px rgba(212,165,116,0.5)'" 
+                               onmouseout="this.style.boxShadow='0 0 10px rgba(212,165,116,0.3)'">
+                                🎯 RESET CAMERA
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -267,6 +335,24 @@
                 }
                 isMinimized = !isMinimized;
             });
+            
+            // Reset camera functionality
+            const resetCameraBtn = document.getElementById('resetCameraBtn');
+            if (resetCameraBtn) {
+                resetCameraBtn.addEventListener('click', () => {
+                    // Reset camera position and rotation
+                    camera.position.set(0, 2.5, 4.0);
+                    camera.rotation.set(0, 0, 0);
+                    targetLookX = 0;
+                    targetLookY = 1.1;
+                    
+                    // Flash effect
+                    resetCameraBtn.style.background = 'linear-gradient(145deg, #ffffff, #d4a574)';
+                    setTimeout(() => {
+                        resetCameraBtn.style.background = 'linear-gradient(145deg, #d4a574, #a67c52)';
+                    }, 150);
+                });
+            }
         }
         
         // Load wooden table
@@ -404,8 +490,36 @@
                     inset -2px -2px 5px rgba(0,0,0,0.5),
                     0 10px 20px rgba(0,0,0,0.6);
                 position: relative;
-                cursor: move;
             ">
+                <!-- Draggable title bar -->
+                <div id="titleBar" style="
+                    background: linear-gradient(145deg, #4a3f3a, #3a2f2a);
+                    padding: 8px 15px;
+                    border-radius: 4px 4px 0 0;
+                    color: #d4a574;
+                    font-size: 12px;
+                    font-weight: bold;
+                    cursor: move;
+                    border-bottom: 1px solid #8b7355;
+                    user-select: none;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                ">
+                    <span>🌙 LUNAR.EDITOR</span>
+                    <div style="
+                        width: 30px;
+                        height: 3px;
+                        background: repeating-linear-gradient(
+                            90deg,
+                            #d4a574 0px,
+                            #d4a574 4px,
+                            transparent 4px,
+                            transparent 8px
+                        );
+                        opacity: 0.8;
+                    "></div>
+                </div>
                 <textarea id="textEditor" placeholder="Hey Andrew,
 
 I did a user interview and the person said Notion doesn't feel good because everything's collapsed into one place. Business, personal, personal development, his writing - all just dumped together.
@@ -435,39 +549,44 @@ The opposite of everything-in-one-place.
                     scrollbar-width: thin;
                     scrollbar-color: #8b7355 #2a1f1a;
                 "></textarea>
-                <!-- Resize handles -->
+                <!-- Resize handles - always visible -->
                 <div class="resize-handle resize-se" style="
                     position: absolute;
-                    bottom: 0;
-                    right: 0;
-                    width: 20px;
-                    height: 20px;
+                    bottom: -2px;
+                    right: -2px;
+                    width: 16px;
+                    height: 16px;
                     background: linear-gradient(135deg, #d4a574, #a67c52);
                     cursor: se-resize;
                     border-radius: 0 0 6px 0;
-                    opacity: 0.7;
+                    border: 2px solid #2a1f1a;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                 "></div>
                 <div class="resize-handle resize-s" style="
                     position: absolute;
-                    bottom: 0;
+                    bottom: -2px;
                     left: 50%;
                     transform: translateX(-50%);
-                    width: 20px;
+                    width: 16px;
                     height: 8px;
                     background: linear-gradient(135deg, #d4a574, #a67c52);
                     cursor: s-resize;
-                    opacity: 0.7;
+                    border: 1px solid #2a1f1a;
+                    border-radius: 0 0 4px 4px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                 "></div>
                 <div class="resize-handle resize-e" style="
                     position: absolute;
-                    right: 0;
+                    right: -2px;
                     top: 50%;
                     transform: translateY(-50%);
                     width: 8px;
-                    height: 20px;
+                    height: 16px;
                     background: linear-gradient(135deg, #d4a574, #a67c52);
                     cursor: e-resize;
-                    opacity: 0.7;
+                    border: 1px solid #2a1f1a;
+                    border-radius: 0 4px 4px 0;
+                    box-shadow: 2px 0 4px rgba(0,0,0,0.3);
                 "></div>
                 
                 <style>
@@ -518,20 +637,22 @@ The opposite of everything-in-one-place.
                 let currentHandle = null;
                 let startX, startY, startWidth, startHeight, startLeft, startTop;
                 
-                // Drag functionality
-                container.addEventListener('mousedown', (e) => {
-                    if (e.target.classList.contains('resize-handle')) return;
-                    if (e.target === textEditor) return; // Don't drag when clicking in textarea
-                    
-                    isDragging = true;
-                    startX = e.clientX;
-                    startY = e.clientY;
-                    const rect = container.getBoundingClientRect();
-                    startLeft = rect.left;
-                    startTop = rect.top;
-                    
-                    e.preventDefault();
-                });
+                // Drag functionality - only from title bar
+                const titleBar = document.getElementById('titleBar');
+                if (titleBar) {
+                    titleBar.addEventListener('mousedown', (e) => {
+                        if (e.target.classList.contains('resize-handle')) return;
+                        
+                        isDragging = true;
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        const rect = container.getBoundingClientRect();
+                        startLeft = rect.left;
+                        startTop = rect.top;
+                        
+                        e.preventDefault();
+                    });
+                }
                 
                 // Resize functionality
                 document.querySelectorAll('.resize-handle').forEach(handle => {
@@ -592,6 +713,25 @@ The opposite of everything-in-one-place.
             }
             
             if (textEditor) {
+                // Track when mouse is in text area
+                textEditor.addEventListener('mouseenter', () => {
+                    isMouseInTextArea = true;
+                    document.body.style.cursor = 'text';
+                });
+                
+                textEditor.addEventListener('mouseleave', () => {
+                    isMouseInTextArea = false;
+                    document.body.style.cursor = 'default';
+                });
+                
+                textEditor.addEventListener('focus', () => {
+                    isMouseInTextArea = true;
+                });
+                
+                textEditor.addEventListener('blur', () => {
+                    isMouseInTextArea = false;
+                });
+                
                 // Load saved text or set default content
                 const savedText = localStorage.getItem('cozyDeskText');
                 if (savedText) {
@@ -665,7 +805,7 @@ The opposite of everything-in-one-place.
         // 3D Floating Music Player
         const musicPlayerElement = document.createElement('div');
         musicPlayerElement.innerHTML = `
-            <div style="
+            <div class="music-player" style="
                 width: 300px; 
                 height: 120px; 
                 background: linear-gradient(145deg, #3a2f2a, #2a1f1a);
@@ -726,6 +866,50 @@ The opposite of everything-in-one-place.
         musicPlayerCSS3D.rotation.z = 0;
         musicPlayerCSS3D.scale.set(0.004, 0.004, 0.004);
         scene.add(musicPlayerCSS3D);
+        
+        // Music player drag functionality
+        setTimeout(() => {
+            const musicContainer = musicPlayerElement.querySelector('div');
+            if (musicContainer) {
+                let isMusicDragging = false;
+                let musicStartX, musicStartY;
+                
+                musicContainer.addEventListener('mousedown', (e) => {
+                    // Only drag if not clicking the play button
+                    if (e.target.id === 'playPauseBtn') return;
+                    
+                    isMusicDragging = true;
+                    musicStartX = e.clientX;
+                    musicStartY = e.clientY;
+                    musicContainer.style.cursor = 'grabbing';
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (isMusicDragging) {
+                        const deltaX = e.clientX - musicStartX;
+                        const deltaY = e.clientY - musicStartY;
+                        
+                        // Update CSS3D object position
+                        musicPlayerCSS3D.position.x += deltaX * 0.003;
+                        musicPlayerCSS3D.position.y -= deltaY * 0.003;
+                        
+                        musicStartX = e.clientX;
+                        musicStartY = e.clientY;
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    if (isMusicDragging) {
+                        isMusicDragging = false;
+                        musicContainer.style.cursor = 'move';
+                    }
+                });
+                
+                // Set initial cursor
+                musicContainer.style.cursor = 'move';
+            }
+        }, 100);
         
         // Audio setup
         const audio = new Audio('./chill-lofi-music-365921.mp3');

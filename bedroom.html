@@ -88,12 +88,17 @@
         camera.position.set(0, 0.3, 0.5); // Much lower - actually sitting on bed
         
         // Player movement variables
-        let moveSpeed = 0.05;
+        let moveSpeed = 0.017; // 2/3 slower (0.05 * 0.33)
         let keys = {};
         let targetLookX = 0, targetLookY = 0.5;
+        let isMouseInTextArea = false;
+        let isDraggingCamera = false;
+        let lastMouseX = 0, lastMouseY = 0;
         
         // Keyboard controls
         document.addEventListener('keydown', (event) => {
+            // Don't capture keys when typing in text areas
+            if (isMouseInTextArea || document.activeElement.tagName === 'TEXTAREA') return;
             keys[event.code] = true;
         });
         
@@ -111,6 +116,52 @@
             // Subtle head movement
             targetLookX = mouseX * 0.8;
             targetLookY = 0.5 + (mouseY * -0.1);
+        });
+        
+        // Camera drag controls
+        document.addEventListener('mousedown', (event) => {
+            if (isMouseInTextArea) return;
+            // Don't drag camera if clicking on help panel or other UI elements
+            if (event.target.closest('#helpPanel') || 
+                event.target.closest('#textEditorContainer') ||
+                event.target.closest('.resize-handle') ||
+                event.target.closest('.music-player')) return;
+                
+            isDraggingCamera = true;
+            lastMouseX = event.clientX;
+            lastMouseY = event.clientY;
+            document.body.style.cursor = 'grabbing';
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDraggingCamera = false;
+            document.body.style.cursor = 'default';
+        });
+        
+        document.addEventListener('mousemove', (event) => {
+            if (isDraggingCamera && !isMouseInTextArea) {
+                const deltaX = event.clientX - lastMouseX;
+                const deltaY = event.clientY - lastMouseY;
+                
+                // Rotate camera based on mouse movement (2/3 slower)
+                camera.rotation.y -= deltaX * 0.00167; // 0.005 * 0.33
+                camera.rotation.x -= deltaY * 0.00167;
+                
+                // Clamp vertical rotation
+                camera.rotation.x = Math.max(-Math.PI/3, Math.min(Math.PI/3, camera.rotation.x));
+                
+                lastMouseX = event.clientX;
+                lastMouseY = event.clientY;
+            } else {
+                // Original mouse look behavior when not dragging
+                mouseX = (event.clientX - window.innerWidth / 2) / window.innerWidth;
+                mouseY = (event.clientY - window.innerHeight / 2) / window.innerHeight;
+                
+                if (!isDraggingCamera) {
+                    targetLookX = mouseX * 0.8;
+                    targetLookY = 0.5 + (mouseY * -0.1);
+                }
+            }
         });
         
         // Player movement function
@@ -316,17 +367,35 @@
                             W/A/S/D or Arrow Keys - Move<br>
                             Space - Float up<br>
                             Shift - Float down<br>
-                            Mouse - Look around
+                            Click + Drag - Look around
                         </div>
                         <div style="margin-bottom: 12px;">
                             <strong style="color: #ff00ff;">EDITOR:</strong><br>
-                            Drag frame - Move editor<br>
+                            Drag title bar - Move editor<br>
                             Resize handles - Scale editor<br>
                             Auto-saves your text
                         </div>
-                        <div>
+                        <div style="margin-bottom: 12px;">
                             <strong style="color: #ff00ff;">MUSIC:</strong><br>
                             Click play/pause button
+                        </div>
+                        <div style="text-align: center;">
+                            <button id="resetCameraBtn" style="
+                                background: linear-gradient(145deg, #ff00ff, #8000ff);
+                                border: 2px solid #00ffff;
+                                color: #00ffff;
+                                padding: 8px 16px;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 11px;
+                                font-weight: bold;
+                                text-shadow: 0 0 5px #00ffff;
+                                box-shadow: 0 0 10px rgba(255,0,255,0.3);
+                                transition: all 0.2s ease;
+                            " onmouseover="this.style.boxShadow='0 0 15px rgba(0,255,255,0.5)'" 
+                               onmouseout="this.style.boxShadow='0 0 10px rgba(255,0,255,0.3)'">
+                                🎯 RESET CAMERA
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -351,6 +420,24 @@
                 }
                 isMinimized = !isMinimized;
             });
+            
+            // Reset camera functionality
+            const resetCameraBtn = document.getElementById('resetCameraBtn');
+            if (resetCameraBtn) {
+                resetCameraBtn.addEventListener('click', () => {
+                    // Reset camera position and rotation
+                    camera.position.set(0, 0.3, 0.5);
+                    camera.rotation.set(0, 0, 0);
+                    targetLookX = 0;
+                    targetLookY = 0.5;
+                    
+                    // Flash effect
+                    resetCameraBtn.style.background = 'linear-gradient(145deg, #00ffff, #ffffff)';
+                    setTimeout(() => {
+                        resetCameraBtn.style.background = 'linear-gradient(145deg, #ff00ff, #8000ff)';
+                    }, 150);
+                });
+            }
         }
         
         function setupInteractiveElements() {
@@ -373,19 +460,36 @@
                         0 15px 40px rgba(255,0,255,0.6),
                         0 0 30px rgba(0,255,255,0.4);
                     position: relative;
-                    cursor: move;
                 ">
-                    <div style="
+                    <!-- Draggable title bar -->
+                    <div id="neonTitleBar" style="
                         background: linear-gradient(145deg, #1a0a1a, #0a0a0a);
-                        padding: 15px 20px;
+                        padding: 10px 20px;
                         border-radius: 9px 9px 0 0;
                         color: #00ffff;
-                        font-size: 16px;
+                        font-size: 14px;
                         border-bottom: 2px solid #ff00ff;
-                        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+                        font-family: 'Courier New', monospace;
                         text-shadow: 0 0 10px #00ffff;
+                        cursor: move;
+                        user-select: none;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
                     ">
-                        ⚡ NEON.TERMINAL - BEDROOM_MODE ⚡
+                        <span>⚡ NEON.TERMINAL - BEDROOM_MODE ⚡</span>
+                        <div style="
+                            width: 40px;
+                            height: 4px;
+                            background: repeating-linear-gradient(
+                                90deg,
+                                #00ffff 0px,
+                                #00ffff 5px,
+                                transparent 5px,
+                                transparent 10px
+                            );
+                            opacity: 0.8;
+                        "></div>
                     </div>
                     
                     <textarea id="neonTextEditor" placeholder="Andrew,
@@ -419,39 +523,44 @@ Excited to play with you!
                         scrollbar-width: thin;
                         scrollbar-color: #00ffff #1a0a1a;
                     "></textarea>
-                    <!-- Resize handles -->
+                    <!-- Resize handles - always visible -->
                     <div class="resize-handle resize-se" style="
                         position: absolute;
-                        bottom: 0;
-                        right: 0;
-                        width: 20px;
-                        height: 20px;
+                        bottom: -3px;
+                        right: -3px;
+                        width: 18px;
+                        height: 18px;
                         background: linear-gradient(135deg, #00ffff, #ff00ff);
                         cursor: se-resize;
                         border-radius: 0 0 12px 0;
-                        opacity: 0.7;
+                        border: 2px solid #0a0a0a;
+                        box-shadow: 0 0 8px rgba(0,255,255,0.5);
                     "></div>
                     <div class="resize-handle resize-s" style="
                         position: absolute;
-                        bottom: 0;
+                        bottom: -3px;
                         left: 50%;
                         transform: translateX(-50%);
-                        width: 20px;
-                        height: 8px;
+                        width: 18px;
+                        height: 10px;
                         background: linear-gradient(135deg, #00ffff, #ff00ff);
                         cursor: s-resize;
-                        opacity: 0.7;
+                        border: 1px solid #0a0a0a;
+                        border-radius: 0 0 6px 6px;
+                        box-shadow: 0 0 6px rgba(0,255,255,0.5);
                     "></div>
                     <div class="resize-handle resize-e" style="
                         position: absolute;
-                        right: 0;
+                        right: -3px;
                         top: 50%;
                         transform: translateY(-50%);
-                        width: 8px;
-                        height: 20px;
+                        width: 10px;
+                        height: 18px;
                         background: linear-gradient(135deg, #00ffff, #ff00ff);
                         cursor: e-resize;
-                        opacity: 0.7;
+                        border: 1px solid #0a0a0a;
+                        border-radius: 0 6px 6px 0;
+                        box-shadow: 0 0 6px rgba(0,255,255,0.5);
                     "></div>
                     
                     <style>
@@ -503,20 +612,22 @@ Excited to play with you!
                     let currentHandle = null;
                     let startX, startY, startWidth, startHeight, startLeft, startTop;
                     
-                    // Drag functionality
-                    container.addEventListener('mousedown', (e) => {
-                        if (e.target.classList.contains('resize-handle')) return;
-                        if (e.target === textEditor) return; // Don't drag when clicking in textarea
-                        
-                        isDragging = true;
-                        startX = e.clientX;
-                        startY = e.clientY;
-                        const rect = container.getBoundingClientRect();
-                        startLeft = rect.left;
-                        startTop = rect.top;
-                        
-                        e.preventDefault();
-                    });
+                    // Drag functionality - only from title bar
+                    const neonTitleBar = document.getElementById('neonTitleBar');
+                    if (neonTitleBar) {
+                        neonTitleBar.addEventListener('mousedown', (e) => {
+                            if (e.target.classList.contains('resize-handle')) return;
+                            
+                            isDragging = true;
+                            startX = e.clientX;
+                            startY = e.clientY;
+                            const rect = container.getBoundingClientRect();
+                            startLeft = rect.left;
+                            startTop = rect.top;
+                            
+                            e.preventDefault();
+                        });
+                    }
                     
                     // Resize functionality
                     document.querySelectorAll('.resize-handle').forEach(handle => {
@@ -577,6 +688,25 @@ Excited to play with you!
                 }
                 
                 if (textEditor) {
+                    // Track when mouse is in text area
+                    textEditor.addEventListener('mouseenter', () => {
+                        isMouseInTextArea = true;
+                        document.body.style.cursor = 'text';
+                    });
+                    
+                    textEditor.addEventListener('mouseleave', () => {
+                        isMouseInTextArea = false;
+                        document.body.style.cursor = 'default';
+                    });
+                    
+                    textEditor.addEventListener('focus', () => {
+                        isMouseInTextArea = true;
+                    });
+                    
+                    textEditor.addEventListener('blur', () => {
+                        isMouseInTextArea = false;
+                    });
+                    
                     const savedText = localStorage.getItem('neonBedroomThoughts');
                     if (savedText) {
                         textEditor.value = savedText;
@@ -648,7 +778,7 @@ Excited to play with you!
             // Floating neon music player
             const musicPlayerElement = document.createElement('div');
             musicPlayerElement.innerHTML = `
-                <div style="
+                <div class="music-player" style="
                     width: 320px; 
                     height: 130px; 
                     background: linear-gradient(145deg, #1a0a1a, #0a0a0a);
@@ -709,6 +839,50 @@ Excited to play with you!
             musicPlayerCSS3D.rotation.z = 0;
             musicPlayerCSS3D.scale.set(0.0028, 0.0028, 0.0028);
             scene.add(musicPlayerCSS3D);
+            
+            // Music player drag functionality
+            setTimeout(() => {
+                const musicContainer = musicPlayerElement.querySelector('div');
+                if (musicContainer) {
+                    let isMusicDragging = false;
+                    let musicStartX, musicStartY;
+                    
+                    musicContainer.addEventListener('mousedown', (e) => {
+                        // Only drag if not clicking the play button
+                        if (e.target.id === 'neonPlayPauseBtn') return;
+                        
+                        isMusicDragging = true;
+                        musicStartX = e.clientX;
+                        musicStartY = e.clientY;
+                        musicContainer.style.cursor = 'grabbing';
+                        e.preventDefault();
+                    });
+                    
+                    document.addEventListener('mousemove', (e) => {
+                        if (isMusicDragging) {
+                            const deltaX = e.clientX - musicStartX;
+                            const deltaY = e.clientY - musicStartY;
+                            
+                            // Update CSS3D object position
+                            musicPlayerCSS3D.position.x += deltaX * 0.003;
+                            musicPlayerCSS3D.position.y -= deltaY * 0.003;
+                            
+                            musicStartX = e.clientX;
+                            musicStartY = e.clientY;
+                        }
+                    });
+                    
+                    document.addEventListener('mouseup', () => {
+                        if (isMusicDragging) {
+                            isMusicDragging = false;
+                            musicContainer.style.cursor = 'move';
+                        }
+                    });
+                    
+                    // Set initial cursor
+                    musicContainer.style.cursor = 'move';
+                }
+            }, 100);
             
             // Audio setup
             const audio = new Audio('./chill-lofi-music-365921.mp3');
